@@ -1,0 +1,35 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "caption-room",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-28",
+  "upload_source_maps": true,
+  "observability": { "enabled": true },
+
+  // The built PWA (apps/web/dist) is served as static assets. Only the API and
+  // WebSocket routes run the Worker; everything else is a file or index.html.
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/ws/*"]
+  },
+
+  // One Durable Object per room fans captions out to every listener.
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+
+  // Room creation is limited per client to keep code space and storage tidy.
+  // Joins are limited per client network to slow down room-code guessing. The
+  // join limit is generous because a whole school can share one public IP.
+  "ratelimits": [
+    { "name": "CREATE_LIMITER", "namespace_id": "4711", "simple": { "limit": 10, "period": 60 } },
+    { "name": "JOIN_LIMITER", "namespace_id": "4712", "simple": { "limit": 600, "period": 60 } }
+  ],
+
+  "vars": {
+    "APP_VERSION": "0.1.0"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "caption-room",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Free, open live captions you can share with a room code. A successor to Web Captioner's sharing feature.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @caption-room/web",
+    "dev:worker": "npm run build -w @caption-room/web && npm run dev -w @caption-room/worker",
+    "build": "npm run build -w @caption-room/web",
+    "build:relay": "npm run build -w @caption-room/web && cargo build --release --manifest-path relay/Cargo.toml",
+    "deploy": "npm run build -w @caption-room/web && npm run deploy -w @caption-room/worker",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:relay": "cargo test --manifest-path relay/Cargo.toml",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "conformance": "node scripts/conformance.mjs"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^5.0.5",
+    "happy-dom": "^21.0.4",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "ws": "^8.22.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

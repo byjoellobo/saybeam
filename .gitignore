@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+.wrangler/
+.dev.vars*
+*.log
+.DS_Store
+
+# Rust relay
+relay/target/
+relay/models/
+
+# Local bench results and browser-test artifacts
+bench-results/
+.playwright-mcp/
+.remember/
