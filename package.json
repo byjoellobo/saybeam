@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "Free, open live captions you can share with a room code. A successor to Web Captioner's sharing feature.",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -19,9 +19,18 @@
     "test:coverage": "vitest run --coverage",
     "test:relay": "cargo test --manifest-path relay/Cargo.toml",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "conformance": "node scripts/conformance.mjs"
+    "conformance": "node scripts/conformance.mjs",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "e2e": "playwright test --project=app",
+    "e2e:model": "playwright test --project=model",
+    "notices": "node scripts/third-party-notices.mjs",
+    "screenshots": "playwright test --project=docs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@biomejs/biome": "^2.6.4",
+    "@playwright/test": "^1.64.1",
     "@vitest/coverage-v8": "^5.0.5",
     "happy-dom": "^21.0.4",
     "typescript": "^7.0.2",
@@ -30,5 +39,13 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mezpos/caption-room.git"
+  },
+  "homepage": "https://github.com/mezpos/caption-room",
+  "bugs": {
+    "url": "https://github.com/mezpos/caption-room/issues"
   }
 }

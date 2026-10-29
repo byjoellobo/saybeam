@@ -14,3 +14,8 @@ relay/models/
 bench-results/
 .playwright-mcp/
 .remember/
+
+# Playwright output
+playwright-report/
+test-results/
+apps/web/.build/

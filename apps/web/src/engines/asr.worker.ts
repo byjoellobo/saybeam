@@ -249,7 +249,14 @@ async function finalize(key: string, audio: Float32Array, startMs: number, endMs
     pendingJobs--;
   }
   const lagMs = streamStartWall ? performance.now() - streamStartWall - endMs : 0;
-  post({ type: 'stats', rtf: rtfEma, lastAsrMs: Math.round(lastAsrMs), lagMs: Math.max(0, Math.round(lagMs)), queue: pendingJobs, partialEveryMs: partialsActive() ? partialEveryMs : 0 });
+  post({
+    type: 'stats',
+    rtf: rtfEma,
+    lastAsrMs: Math.round(lastAsrMs),
+    lagMs: Math.max(0, Math.round(lagMs)),
+    queue: pendingJobs,
+    partialEveryMs: partialsActive() ? partialEveryMs : 0,
+  });
 }
 
 /** Partials cost a full transcription each, so space them by how fast the device is. */

@@ -36,7 +36,9 @@ export function EnginePanel({ config, onChange, caps, lang, recommendation, disa
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
-    void listMicrophones().then(setMics).catch(() => setMics([]));
+    void listMicrophones()
+      .then(setMics)
+      .catch(() => setMics([]));
   }, [config.kind]);
 
   const speechLang = config.kind === 'webspeech' ? config.lang : lang;
@@ -117,7 +119,14 @@ export function EnginePanel({ config, onChange, caps, lang, recommendation, disa
             {!findPreset(config.modelId).englishOnly && (
               <label class="field">
                 <span>Language</span>
-                <input type="text" value={config.language ?? ''} disabled={disabled} placeholder="auto" size={6} onInput={(e) => onChange({ ...config, language: e.currentTarget.value.trim().toLowerCase() || null })} />
+                <input
+                  type="text"
+                  value={config.language ?? ''}
+                  disabled={disabled}
+                  placeholder="auto"
+                  size={6}
+                  onInput={(e) => onChange({ ...config, language: e.currentTarget.value.trim().toLowerCase() || null })}
+                />
               </label>
             )}
           </div>
@@ -145,7 +154,12 @@ export function EnginePanel({ config, onChange, caps, lang, recommendation, disa
           {caps?.webSpeechOnDevice && onDevice !== 'unsupported' && (
             <div class="on-device">
               <label class="switch">
-                <input type="checkbox" checked={config.onDevice} disabled={disabled || onDevice === 'unavailable'} onChange={(e) => onChange({ ...config, onDevice: e.currentTarget.checked, phrases: vocabulary })} />
+                <input
+                  type="checkbox"
+                  checked={config.onDevice}
+                  disabled={disabled || onDevice === 'unavailable'}
+                  onChange={(e) => onChange({ ...config, onDevice: e.currentTarget.checked, phrases: vocabulary })}
+                />
                 <span>
                   Recognise on this device
                   <small>{onDeviceText(onDevice)}</small>
@@ -177,13 +191,26 @@ export function EnginePanel({ config, onChange, caps, lang, recommendation, disa
         <>
           <label class="field">
             <span>Server address</span>
-            <input type="url" value={config.url} disabled={disabled} placeholder="ws://localhost:9090" onInput={(e) => onChange({ ...config, url: e.currentTarget.value.trim() })} />
+            <input
+              type="url"
+              value={config.url}
+              disabled={disabled}
+              placeholder="ws://localhost:9090"
+              onInput={(e) => onChange({ ...config, url: e.currentTarget.value.trim() })}
+            />
             <small>A self-hosted collabora/WhisperLive server. Use wss:// when this page is on https.</small>
           </label>
           <div class="row gap wrap">
             <label class="field">
               <span>Model</span>
-              <input type="text" list="wl-models" value={config.model} disabled={disabled} size={12} onInput={(e) => onChange({ ...config, model: e.currentTarget.value.trim() })} />
+              <input
+                type="text"
+                list="wl-models"
+                value={config.model}
+                disabled={disabled}
+                size={12}
+                onInput={(e) => onChange({ ...config, model: e.currentTarget.value.trim() })}
+              />
               <datalist id="wl-models">
                 {WHISPERLIVE_MODELS.map((m) => (
                   <option key={m} value={m} />
@@ -192,11 +219,25 @@ export function EnginePanel({ config, onChange, caps, lang, recommendation, disa
             </label>
             <label class="field">
               <span>Language</span>
-              <input type="text" value={config.language ?? ''} placeholder="auto" disabled={disabled} size={6} onInput={(e) => onChange({ ...config, language: e.currentTarget.value.trim().toLowerCase() || null })} />
+              <input
+                type="text"
+                value={config.language ?? ''}
+                placeholder="auto"
+                disabled={disabled}
+                size={6}
+                onInput={(e) => onChange({ ...config, language: e.currentTarget.value.trim().toLowerCase() || null })}
+              />
             </label>
             <label class="field">
               <span>API key (optional)</span>
-              <input type="password" value={config.apiKey ?? ''} autocomplete="off" disabled={disabled} size={14} onInput={(e) => onChange({ ...config, apiKey: e.currentTarget.value || undefined })} />
+              <input
+                type="password"
+                value={config.apiKey ?? ''}
+                autocomplete="off"
+                disabled={disabled}
+                size={14}
+                onInput={(e) => onChange({ ...config, apiKey: e.currentTarget.value || undefined })}
+              />
             </label>
           </div>
           {/^ws:\/\//i.test(config.url) && !/^ws:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(config.url) && (

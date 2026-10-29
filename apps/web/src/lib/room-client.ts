@@ -13,6 +13,7 @@ import {
   KEEPALIVE_PONG,
   type ClientMsg,
   type FinalMsg,
+  type LinkTarget,
   type MetaMsg,
   type Role,
   type RoomView,
@@ -26,9 +27,13 @@ export interface ClientSnapshot {
   readonly connection: ConnectionState;
   /** Human-readable reason when connection is 'closed'. */
   readonly closeReason: string | null;
+  /** WebSocket close code when connection is 'closed' for good (e.g. 4003). */
+  readonly closeCode: number | null;
   /** Finals spoken but not yet confirmed by the server. */
   readonly pending: readonly FinalMsg[];
   readonly rttMs: number | null;
+  /** The latest link secret the speaker received after a rotate. */
+  readonly rotation: { readonly target: LinkTarget; readonly token: string } | null;
 }
 
 export interface SocketLike {
@@ -90,6 +95,8 @@ const FATAL: Record<number, string> = {
   [CLOSE.expired]: 'This room has expired.',
 };
 
+const PRIVATE_ROOM = 'This is a private room. Scan the QR code or open the full link from the organiser.';
+
 const browserTimers: Timers = {
   setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms),
   clearTimeout: (h) => globalThis.clearTimeout(h as ReturnType<typeof setTimeout>),
@@ -130,7 +137,7 @@ export class RoomClient {
     this.random = opts.random ?? Math.random;
     this.timers = opts.timers ?? browserTimers;
     this.outboxKey = `caption-room:outbox:${opts.code}`;
-    this.state = { view: EMPTY_VIEW, connection: 'idle', closeReason: null, pending: this.loadOutbox(), rttMs: null };
+    this.state = { view: EMPTY_VIEW, connection: 'idle', closeReason: null, closeCode: null, pending: this.loadOutbox(), rttMs: null, rotation: null };
   }
 
   get snapshot(): ClientSnapshot {
@@ -202,6 +209,11 @@ export class RoomClient {
 
   end(): void {
     this.control('end', { t: 'end' });
+  }
+
+  /** Replace the corrector or (private rooms) audience link. Returns false when offline. */
+  rotate(target: LinkTarget): boolean {
+    return this.send({ t: 'rotate', target });
   }
 
   /** Actions waiting for the connection to come back. */
@@ -285,10 +297,10 @@ export class RoomClient {
       if (this.socket !== socket) return;
       this.socket = null;
       this.clearTimers();
-      const fatal = FATAL[ev.code];
+      const fatal = ev.code === CLOSE.unauthorized && this.opts.role === 'listener' ? PRIVATE_ROOM : FATAL[ev.code];
       if (fatal) {
         this.stopped = true;
-        this.update({ connection: 'closed', closeReason: fatal });
+        this.update({ connection: 'closed', closeReason: fatal, closeCode: ev.code });
         return;
       }
       if (!this.stopped) this.scheduleReconnect();
@@ -318,6 +330,10 @@ export class RoomClient {
     }
     if (msg.t === 'error' && (msg.code === 'room-ended' || msg.code === 'room-full')) pending = [];
     if (msg.t === 'pong') rttMs = Math.max(0, this.now() - msg.ts);
+    if (msg.t === 'rotated') {
+      this.update({ rotation: { target: msg.target, token: msg.token } });
+      return;
+    }
     if (pending !== this.state.pending) this.persistOutbox(pending);
     this.update({ view, pending, rttMs });
   }

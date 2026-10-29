@@ -3,6 +3,7 @@ import { collapseRepeats, isLikelyHallucination } from '../src/engines/hallucina
 import { CaptionPipeline } from '../src/lib/caption-pipeline';
 import { compileReplacements, parseReplacements } from '../src/lib/replacements';
 import { parseRoute } from '../src/lib/router';
+import { audienceDisplay, audienceUrl, parseJoinInput } from '../src/lib/links';
 import { sanitizeListenerPrefs, DEFAULT_LISTENER_PREFS, vocabularyList } from '../src/lib/storage';
 import { percentile, toCsv, PASSAGES, type BenchResult } from '../src/lib/bench';
 import { findPreset, maxNewTokens, MODEL_PRESETS } from '../src/engines/models';
@@ -94,6 +95,26 @@ describe('router', () => {
     expect(parseRoute('/r/ABC230')).toEqual({ name: 'not-found' });
     expect(parseRoute('/x/ABC234')).toEqual({ name: 'not-found' });
     expect(parseRoute('/nope')).toEqual({ name: 'not-found' });
+  });
+});
+
+describe('links', () => {
+  const secret = 'abcDEF123_-abcDEF123_-abcDEF123_-abcDEF1234';
+
+  it('builds audience links and never displays the secret', () => {
+    expect(audienceUrl('https://c.example', 'ABC234', undefined)).toBe('https://c.example/r/ABC234');
+    expect(audienceUrl('https://c.example', 'ABC234', secret)).toBe(`https://c.example/r/ABC234#k=${secret}`);
+    expect(audienceDisplay('https://c.example', 'ABC234', true)).toBe('c.example/r/ABC234 (private link)');
+    expect(audienceDisplay('http://192.168.1.5:7300', 'ABC234', false)).toBe('192.168.1.5:7300/r/ABC234');
+  });
+
+  it('parses codes and pasted links, keeping only a well-formed secret', () => {
+    expect(parseJoinInput(' abc-234 ')).toEqual({ kind: 'code', code: 'ABC234' });
+    expect(parseJoinInput('ABC23')).toEqual({ kind: 'invalid' });
+    expect(parseJoinInput('https://c.example/r/abc234')).toEqual({ kind: 'link', path: '/r/ABC234' });
+    expect(parseJoinInput(`https://c.example/r/ABC234/?utm=x#k=${secret}`)).toEqual({ kind: 'link', path: `/r/ABC234#k=${secret}` });
+    expect(parseJoinInput('https://c.example/r/ABC234#k=<script>')).toEqual({ kind: 'link', path: '/r/ABC234' });
+    expect(parseJoinInput('https://c.example/r/ABC230')).toEqual({ kind: 'invalid' });
   });
 });
 

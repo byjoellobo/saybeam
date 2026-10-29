@@ -47,7 +47,11 @@ function openSocket(code) {
 }
 
 async function main() {
-  const res = await fetch(`${base}/api/rooms`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Demo lecture: how sound travels', lang: 'en-IN' }) });
+  const res = await fetch(`${base}/api/rooms`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ title: 'Demo lecture: how sound travels', lang: 'en-IN' }),
+  });
   if (!res.ok) throw new Error(`could not create room: ${res.status} ${await res.text()}`);
   const room = await res.json();
   console.log(`Room ${room.code}`);

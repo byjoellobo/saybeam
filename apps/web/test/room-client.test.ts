@@ -87,7 +87,7 @@ const welcome = (over: Partial<WelcomeMsg> = {}): WelcomeMsg => ({
   v: 1,
   room: 'ABCDEF',
   role: 'speaker',
-  meta: { title: '', lang: 'en-US', allowExport: true, createdAt: 0 },
+  meta: { title: '', lang: 'en-US', allowExport: true, createdAt: 0, private: false },
   status: 'live',
   mode: 'replace',
   segments: [],
@@ -158,9 +158,19 @@ describe('RoomClient', () => {
     c.sendPartial('a', 'hell');
     c.sendPartial('a', 'hello');
     timers.advance(149);
-    expect(last().json().filter((m) => m.t === 'partial').map((m) => m.text)).toEqual(['hel']);
+    expect(
+      last()
+        .json()
+        .filter((m) => m.t === 'partial')
+        .map((m) => m.text),
+    ).toEqual(['hel']);
     timers.advance(1);
-    expect(last().json().filter((m) => m.t === 'partial').map((m) => m.text)).toEqual(['hel', 'hello']);
+    expect(
+      last()
+        .json()
+        .filter((m) => m.t === 'partial')
+        .map((m) => m.text),
+    ).toEqual(['hel', 'hello']);
   });
 
   it('keeps finals in a persisted outbox until echoed, and redelivers after reconnect', () => {
@@ -181,7 +191,12 @@ describe('RoomClient', () => {
     expect(sockets).toHaveLength(2);
     last().open();
     last().recv(welcome({ mode: 'append', rev: 0 }));
-    expect(last().json().filter((m) => m.t === 'final').map((m) => m.id)).toEqual(['a', 'b']);
+    expect(
+      last()
+        .json()
+        .filter((m) => m.t === 'final')
+        .map((m) => m.id),
+    ).toEqual(['a', 'b']);
 
     last().recv({ t: 'final', seg: { seq: 1, id: 'a', text: 'One.', ts: 1, rev: 1 } });
     last().recv({ t: 'final', seg: { seq: 2, id: 'b', text: 'Spoken offline.', ts: 2, rev: 2 } });
@@ -254,7 +269,9 @@ describe('RoomClient', () => {
     last().open();
     last().recv(welcome({ segments: [{ seq: 5, id: 'e', text: 'x', ts: 0, rev: 1 }], hasMore: true }));
     timers.advance(15_000);
-    const ping = last().json().find((m) => m.t === 'ping');
+    const ping = last()
+      .json()
+      .find((m) => m.t === 'ping');
     expect(ping).toBeDefined();
     timers.advance(40);
     last().recv({ t: 'pong', ts: Number(ping?.ts), serverTime: 0 });
@@ -264,7 +281,11 @@ describe('RoomClient', () => {
     c.setStatus('paused');
     c.loadEarlier(50);
     c.end();
-    expect(last().json().map((m) => m.t)).toEqual(expect.arrayContaining(['correct', 'meta', 'status', 'history', 'end']));
+    expect(
+      last()
+        .json()
+        .map((m) => m.t),
+    ).toEqual(expect.arrayContaining(['correct', 'meta', 'status', 'history', 'end']));
     last().recv({ t: 'error', code: 'room-ended', message: 'x' });
     c.close();
     expect(c.snapshot.connection).toBe('closed');
@@ -278,7 +299,11 @@ describe('RoomClient', () => {
     timers.advance(500);
     last().open();
     last().recv(welcome());
-    const finals = () => last().json().filter((m) => m.t === 'final').map((m) => m.id);
+    const finals = () =>
+      last()
+        .json()
+        .filter((m) => m.t === 'final')
+        .map((m) => m.id);
     expect(finals()).toHaveLength(15);
     timers.advance(1000);
     expect(finals()).toHaveLength(20);
@@ -295,7 +320,11 @@ describe('RoomClient', () => {
     c.sendFinal({ id: 'bad', text: 'x' });
     timers.advance(60_000);
     expect(c.snapshot.pending).toHaveLength(0);
-    expect(last().json().filter((m) => m.t === 'final')).toHaveLength(12);
+    expect(
+      last()
+        .json()
+        .filter((m) => m.t === 'final'),
+    ).toHaveLength(12);
   });
 
   it('queues speaker actions taken offline and replays them on reconnect', () => {
@@ -313,7 +342,9 @@ describe('RoomClient', () => {
     timers.advance(500);
     last().open();
     last().recv(welcome({ mode: 'append' }));
-    const sent = last().json().filter((m) => m.t !== 'hello');
+    const sent = last()
+      .json()
+      .filter((m) => m.t !== 'hello');
     expect(sent).toEqual(
       expect.arrayContaining([
         { t: 'status', status: 'paused' },
@@ -332,6 +363,30 @@ describe('RoomClient', () => {
     c.nudge();
     c.nudge();
     expect(sockets.filter((s) => s.closedWith === null && s.readyState !== 3)).toHaveLength(1);
+  });
+
+  it('sends rotate requests and exposes the new secret once', () => {
+    const c = make();
+    c.connect();
+    expect(c.rotate('corrector')).toBe(false); // offline
+    last().open();
+    last().recv(welcome());
+    expect(c.rotate('corrector')).toBe(true);
+    expect(
+      last()
+        .json()
+        .find((m) => m.t === 'rotate'),
+    ).toEqual({ t: 'rotate', target: 'corrector' });
+    last().recv({ t: 'rotated', target: 'corrector', token: 'new-secret-new-secret-new-secret-new-secre' });
+    expect(c.snapshot.rotation).toEqual({ target: 'corrector', token: 'new-secret-new-secret-new-secret-new-secre' });
+  });
+
+  it('explains private rooms to listeners refused with 4003', () => {
+    const c = make('listener');
+    c.connect();
+    last().open();
+    last().drop(4003);
+    expect(c.snapshot.closeReason).toMatch(/private room/);
   });
 
   it('ignores garbage frames', () => {

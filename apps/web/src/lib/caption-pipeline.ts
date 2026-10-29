@@ -76,7 +76,12 @@ export class CaptionPipeline {
     }
     const startMs = this.offset(timing.startMs);
     const endMs = this.offset(timing.endMs);
-    this.sink.sendFinal({ id, text: clean.slice(0, 2000), ...(startMs !== undefined ? { startMs } : {}), ...(endMs !== undefined && (startMs === undefined || endMs >= startMs) ? { endMs } : {}) });
+    this.sink.sendFinal({
+      id,
+      text: clean.slice(0, 2000),
+      ...(startMs !== undefined ? { startMs } : {}),
+      ...(endMs !== undefined && (startMs === undefined || endMs >= startMs) ? { endMs } : {}),
+    });
   }
 
   clearPartial(): void {

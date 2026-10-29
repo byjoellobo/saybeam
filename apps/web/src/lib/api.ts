@@ -46,7 +46,9 @@ export function createRoom(body: CreateRoomRequest): Promise<CreateRoomResponse>
 export interface RoomSummary {
   readonly code: string;
   readonly status: RoomStatus;
+  /** Empty for private rooms. */
   readonly title: string;
+  readonly private?: boolean;
 }
 
 export function describeRoom(code: string): Promise<RoomSummary> {

@@ -1,4 +1,4 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { formatRoomCode } from '@caption-room/protocol';
 import { qrSvg } from '../lib/browser';
 import type { EngineStats, EngineStatus } from '../engines/types';
@@ -73,26 +73,41 @@ interface PresentProps {
   readonly code: string;
   readonly url: string;
   readonly title: string;
+  /** Private rooms: the QR is the way in, so do not invite people to type the code. */
+  readonly privateRoom?: boolean;
   readonly onClose: () => void;
 }
 
 /** Full-screen QR and code for the projector. */
-export function PresentOverlay({ code, url, title, onClose }: PresentProps) {
+export function PresentOverlay({ code, url, title, privateRoom = false, onClose }: PresentProps) {
+  const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
+    closeRef.current?.focus();
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   return (
+    // Clicking anywhere closes it for convenience at the projector; keyboard users have Escape and the Close button.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: Escape and the Close button are the keyboard equivalents
     <div class="present" role="dialog" aria-modal="true" aria-label="Join instructions" onClick={onClose}>
+      <button type="button" class="present-close" ref={closeRef} onClick={onClose}>
+        Close
+      </button>
       <div class="present-inner">
         {title && <h2>{title}</h2>}
         <p class="present-lede">Live captions on your phone</p>
         <div class="present-qr" dangerouslySetInnerHTML={{ __html: qrSvg(url) }} />
-        <p class="present-url">{url.replace(/^https?:\/\//, '').replace(/\/r\/.*$/, '')}</p>
-        <p class="present-code">
-          Code <strong>{formatRoomCode(code)}</strong>
-        </p>
+        {privateRoom ? (
+          <p class="present-code">Scan the code to join</p>
+        ) : (
+          <>
+            <p class="present-url">{url.replace(/^https?:\/\//, '').replace(/\/r\/.*$/, '')}</p>
+            <p class="present-code">
+              Code <strong>{formatRoomCode(code)}</strong>
+            </p>
+          </>
+        )}
         <p class="muted">Click anywhere or press Escape to close</p>
       </div>
     </div>

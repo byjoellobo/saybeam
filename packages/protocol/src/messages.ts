@@ -25,7 +25,7 @@ export const LIMITS = {
   maxRoomAgeMs: 72 * 60 * 60 * 1000,
   /** Close a connection after this many rejected frames (bad frames or rate limiting). */
   maxStrikes: 20,
-  /** Token cost of a history request (other frames cost 1). */
+  /** Token cost of a history or rotate request (other frames cost 1). */
   historyCost: 10,
   /** How many changed segments a reconnecting client may receive as a delta before we send a full reset instead. */
   resumeLimit: 1000,
@@ -68,6 +68,8 @@ export interface RoomMeta {
   /** When true, listeners may download the transcript. */
   readonly allowExport: boolean;
   readonly createdAt: number;
+  /** Listeners need the secret from the QR link, not just the code. */
+  readonly private: boolean;
 }
 
 export interface Presence {
@@ -76,16 +78,7 @@ export interface Presence {
   readonly speaker: boolean;
 }
 
-export type ErrorCode =
-  | 'bad-frame'
-  | 'hello-required'
-  | 'unauthorized'
-  | 'forbidden'
-  | 'not-found'
-  | 'room-ended'
-  | 'room-full'
-  | 'invalid'
-  | 'rate-limited';
+export type ErrorCode = 'bad-frame' | 'hello-required' | 'unauthorized' | 'forbidden' | 'not-found' | 'room-ended' | 'room-full' | 'invalid' | 'rate-limited';
 
 /* ----------------------------- client -> server ----------------------------- */
 
@@ -136,17 +129,14 @@ export interface PingMsg {
   readonly t: 'ping';
   readonly ts: number;
 }
+/** Replace a link's secret (speaker only). Everyone using the old link is disconnected. */
+export interface RotateMsg {
+  readonly t: 'rotate';
+  readonly target: LinkTarget;
+}
+export type LinkTarget = 'corrector' | 'listener';
 
-export type ClientMsg =
-  | HelloMsg
-  | PartialMsg
-  | FinalMsg
-  | CorrectMsg
-  | MetaMsg
-  | StatusMsg
-  | HistoryMsg
-  | EndMsg
-  | PingMsg;
+export type ClientMsg = HelloMsg | PartialMsg | FinalMsg | CorrectMsg | MetaMsg | StatusMsg | HistoryMsg | EndMsg | PingMsg | RotateMsg;
 
 /* ----------------------------- server -> client ----------------------------- */
 
@@ -210,6 +200,11 @@ export interface PongMsg {
   readonly ts: number;
   readonly serverTime: number;
 }
+export interface RotatedMsg {
+  readonly t: 'rotated';
+  readonly target: LinkTarget;
+  readonly token: string;
+}
 
 export type ServerMsg =
   | WelcomeMsg
@@ -221,7 +216,8 @@ export type ServerMsg =
   | ServerHistoryMsg
   | PresenceMsg
   | ErrorMsg
-  | PongMsg;
+  | PongMsg
+  | RotatedMsg;
 
 /** WebSocket close codes used by Caption Room (4000-4999 is the application range). */
 export const CLOSE = {
@@ -241,11 +237,15 @@ export interface CreateRoomRequest {
   readonly title?: string;
   readonly lang?: string;
   readonly allowExport?: boolean;
+  /** Require the listener secret (carried in the QR link) to join. */
+  readonly private?: boolean;
 }
 export interface CreateRoomResponse {
   readonly code: string;
   readonly speakerToken: string;
   readonly correctorToken: string;
+  /** Present only for private rooms. */
+  readonly listenerToken?: string;
 }
 export interface ServerInfo {
   readonly mode: 'cloud' | 'lan';

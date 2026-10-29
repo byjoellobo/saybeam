@@ -22,7 +22,7 @@ const STOCK_PHRASES = new Set([
 const normalise = (text: string): string =>
   text
     .toLowerCase()
-    .replace(/[\[\]()♪♫*.,!?'"…:;-]/g, ' ')
+    .replace(/[[\]()♪♫*.,!?'"…:;-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 

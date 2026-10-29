@@ -45,7 +45,10 @@ function render(size, maskable) {
   const px = new Uint8Array(size * size * 4);
   for (let py = 0; py < size; py++) {
     for (let pxl = 0; pxl < size; pxl++) {
-      let r = 0, g = 0, b = 0, a = 0;
+      let r = 0,
+        g = 0,
+        b = 0,
+        a = 0;
       for (let sy = 0; sy < ss; sy++) {
         for (let sx = 0; sx < ss; sx++) {
           const x = ((pxl + (sx + 0.5) / ss) / size) * 512;
@@ -53,7 +56,10 @@ function render(size, maskable) {
           let color = null;
           for (const shape of list) if (inside(shape, x, y)) color = shape.color;
           if (color) {
-            r += color[0]; g += color[1]; b += color[2]; a += 255;
+            r += color[0];
+            g += color[1];
+            b += color[2];
+            a += 255;
           }
         }
       }
@@ -99,7 +105,12 @@ function png(size, rgba) {
     raw[y * (size * 4 + 1)] = 0; // filter: none
     Buffer.from(rgba.buffer, y * size * 4, size * 4).copy(raw, y * (size * 4 + 1) + 1);
   }
-  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', header), chunk('IDAT', deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(raw, { level: 9 })),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
 }
 
 for (const [name, size, maskable] of [

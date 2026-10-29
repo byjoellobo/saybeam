@@ -1,0 +1,153 @@
+#!/usr/bin/env node
+/**
+ * Regenerate relay/THIRD_PARTY_LICENSES.md: every crate compiled into the
+ * release binary (normal dependencies only, no dev or build dependencies).
+ *
+ *   node relay/scripts/third_party.mjs [--host | --target <triple>...] [--check]
+ *
+ * By default it lists the union for the targets we ship release binaries for
+ * (see .github/workflows/release-relay.yml), which is a superset of any one
+ * platform. --host lists only the host target (`rustc -vV`); --target (repeat
+ * it) picks targets explicitly. Licenses that are not clearly compatible with
+ * AGPL-3.0-or-later are flagged in the file and on stderr; --check makes the
+ * script exit 1 when any are flagged.
+ */
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const relayDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+const args = process.argv.slice(2);
+const check = args.includes('--check');
+const targets = args.flatMap((arg, i) => (arg === '--target' && args[i + 1] ? [args[i + 1]] : []));
+
+/** SPDX ids we accept. Exceptions (`WITH ...`) are checked separately. */
+const ALLOWED = new Set(['MIT', 'MIT-0', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', '0BSD', 'ISC', 'Unicode-DFS-2016', 'Unicode-3.0', 'Zlib', 'MPL-2.0', 'CC0-1.0']);
+const ALLOWED_EXCEPTIONS = new Set(['LLVM-exception']);
+
+function run(cmd, cmdArgs) {
+  return execFileSync(cmd, cmdArgs, { cwd: relayDir, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+}
+
+function hostTarget() {
+  const line = run('rustc', ['-vV'])
+    .split('\n')
+    .find((l) => l.startsWith('host:'));
+  if (!line) throw new Error('could not read the host target from `rustc -vV`');
+  return line.slice('host:'.length).trim();
+}
+
+/** Package ids reachable from the root through normal (non-dev, non-build) edges. */
+function normalClosure(metadata) {
+  const nodes = new Map(metadata.resolve.nodes.map((n) => [n.id, n]));
+  const seen = new Set();
+  const stack = [metadata.resolve.root];
+  while (stack.length > 0) {
+    const id = stack.pop();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    for (const dep of nodes.get(id)?.deps ?? []) {
+      if (dep.dep_kinds.some((k) => k.kind === null)) stack.push(dep.pkg);
+    }
+  }
+  seen.delete(metadata.resolve.root);
+  return seen;
+}
+
+/** Evaluate an SPDX expression: OR needs one acceptable side, AND needs both. */
+function acceptable(expression) {
+  const tokens = expression.replace(/\//g, ' OR ').match(/\(|\)|[^\s()]+/g) ?? [];
+  let pos = 0;
+  const peek = () => tokens[pos];
+  const next = () => tokens[pos++];
+  function primary() {
+    if (peek() === '(') {
+      next();
+      const value = orExpr();
+      next(); // ')'
+      return value;
+    }
+    const id = next() ?? '';
+    if (peek() === 'WITH') {
+      next();
+      const exception = next() ?? '';
+      return ALLOWED.has(id) && ALLOWED_EXCEPTIONS.has(exception);
+    }
+    return ALLOWED.has(id.replace(/\+$/, ''));
+  }
+  function andExpr() {
+    let value = primary();
+    while (peek() === 'AND') {
+      next();
+      value = primary() && value;
+    }
+    return value;
+  }
+  function orExpr() {
+    let value = andExpr();
+    while (peek() === 'OR') {
+      next();
+      value = andExpr() || value;
+    }
+    return value;
+  }
+  return tokens.length > 0 && orExpr();
+}
+
+/** Keep in step with the matrix in .github/workflows/release-relay.yml. */
+const RELEASE_TARGETS = ['x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu', 'aarch64-apple-darwin', 'x86_64-apple-darwin'];
+
+function chooseTargets() {
+  if (targets.length > 0) return targets;
+  if (args.includes('--host')) return [hostTarget()];
+  return RELEASE_TARGETS;
+}
+
+const wanted = chooseTargets();
+const packages = new Map();
+for (const target of wanted) {
+  const metadata = JSON.parse(run('cargo', ['metadata', '--format-version', '1', '--locked', '--filter-platform', target]));
+  const byId = new Map(metadata.packages.map((p) => [p.id, p]));
+  for (const id of normalClosure(metadata)) {
+    const pkg = byId.get(id);
+    if (pkg) packages.set(`${pkg.name}@${pkg.version}`, pkg);
+  }
+}
+
+const rows = [...packages.values()].sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version, undefined, { numeric: true }));
+const flagged = rows.filter((p) => !p.license || !acceptable(p.license));
+const cell = (text) => String(text).replace(/\|/g, '\\|');
+
+const lines = [
+  '# Third-party licenses',
+  '',
+  'Crates compiled into the `caption-room-relay` release binary (normal dependencies only;',
+  'test and build-time tools are not shipped). Caption Room itself is licensed under',
+  'AGPL-3.0-or-later; every crate below is under a license compatible with it unless listed',
+  'under "Needs review".',
+  '',
+  `Targets: ${wanted.map((t) => `\`${t}\``).join(', ')}. Generated by \`node relay/scripts/third_party.mjs\`;`,
+  'regenerate after changing dependencies. The web app embedded in the binary has its own',
+  'npm dependencies, which are not listed here.',
+  '',
+  `## Needs review (${flagged.length})`,
+  '',
+  ...(flagged.length === 0
+    ? ['None: every license is MIT, Apache-2.0, BSD, ISC, Unicode, Zlib, MPL-2.0 or CC0 (or offers one of them).']
+    : flagged.map((p) => `- ${p.name} ${p.version}: ${p.license ?? `no SPDX license (see ${p.license_file ?? 'the crate'})`}`)),
+  '',
+  `## Crates (${rows.length})`,
+  '',
+  '| Crate | Version | License | Repository |',
+  '| --- | --- | --- | --- |',
+  ...rows.map((p) => `| ${cell(p.name)} | ${cell(p.version)} | ${cell(p.license ?? 'see license file')} | ${p.repository ? cell(p.repository) : ''} |`),
+  '',
+];
+
+writeFileSync(join(relayDir, 'THIRD_PARTY_LICENSES.md'), lines.join('\n'));
+console.log(`Wrote THIRD_PARTY_LICENSES.md: ${rows.length} crates for ${wanted.join(', ')}.`);
+if (flagged.length > 0) {
+  console.error(`Needs review: ${flagged.map((p) => `${p.name} (${p.license ?? 'no license'})`).join(', ')}`);
+  if (check) process.exit(1);
+}

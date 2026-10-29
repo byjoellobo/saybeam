@@ -13,8 +13,8 @@
   --warn: #ffb547;
   --radius: 14px;
   --radius-sm: 9px;
-  --font-ui: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
+  --font-ui: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
   --focus: 0 0 0 3px var(--bg), 0 0 0 6px var(--accent);
   color-scheme: dark;
 }
@@ -123,7 +123,10 @@ code {
   font-weight: 700;
   cursor: pointer;
   text-decoration: none;
-  transition: background 120ms, border-color 120ms, transform 80ms;
+  transition:
+    background 120ms,
+    border-color 120ms,
+    transform 80ms;
 }
 .btn:hover:not(:disabled):not(.disabled) {
   border-color: var(--muted);
@@ -198,7 +201,7 @@ select:focus-visible,
 textarea:focus-visible {
   border-color: var(--accent);
 }
-input[type='range'] {
+input[type="range"] {
   accent-color: var(--accent);
   padding: 0;
   border: 0;
@@ -206,8 +209,8 @@ input[type='range'] {
   flex: 1;
   min-width: 120px;
 }
-input[type='checkbox'],
-input[type='radio'] {
+input[type="checkbox"],
+input[type="radio"] {
   accent-color: var(--accent);
   min-height: 0;
 }
@@ -460,9 +463,11 @@ legend {
   font-size: clamp(1.8rem, 7vw, 2.6rem);
   letter-spacing: 0.25em;
   text-align: center;
-  text-transform: uppercase;
   padding: 0.6rem;
   width: 100%;
+}
+.code-input::placeholder {
+  letter-spacing: 0.25em;
 }
 
 .recent {

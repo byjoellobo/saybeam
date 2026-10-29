@@ -19,7 +19,7 @@ export function parseReplacements(text: string): Replacement[] {
   return rules;
 }
 
-const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export interface CompiledReplacements {
   readonly apply: (text: string) => string;
@@ -35,7 +35,7 @@ export function compileReplacements(rules: readonly Replacement[]): CompiledRepl
   if (!sorted.length) return { apply: (t) => t, count: 0 };
   const key = (s: string): string => s.toLowerCase().replace(/\s+/g, ' ');
   const lookup = new Map(sorted.map((r) => [key(r.from), r.to]));
-  const pattern = new RegExp(`(?<![\\p{L}\\p{N}])(?:${sorted.map((r) => escape(r.from).replace(/\s+/g, '\\s+')).join('|')})(?![\\p{L}\\p{N}])`, 'giu');
+  const pattern = new RegExp(`(?<![\\p{L}\\p{N}])(?:${sorted.map((r) => escapeRegex(r.from).replace(/\s+/g, '\\s+')).join('|')})(?![\\p{L}\\p{N}])`, 'giu');
   return {
     count: sorted.length,
     apply: (text) =>

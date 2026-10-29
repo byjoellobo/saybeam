@@ -73,13 +73,13 @@ details.panel > summary::-webkit-details-marker {
   display: none;
 }
 details.panel > summary::after {
-  content: '+';
+  content: "+";
   color: var(--muted);
   font-size: 1.3rem;
   line-height: 1;
 }
 details.panel[open] > summary::after {
-  content: '\2212';
+  content: "\2212";
 }
 details.panel[open] > summary {
   margin-bottom: 0.75rem;
@@ -195,6 +195,24 @@ details.panel[open] > summary {
 }
 .line:hover {
   background: var(--surface-2);
+}
+.line-button {
+  all: unset;
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  width: 100%;
+  cursor: text;
+  border-radius: 6px;
+}
+.line-button:focus-visible {
+  box-shadow: var(--focus);
+}
+.line:has(.line-button) {
+  padding: 0;
+}
+.line:has(.line-button) .line-button {
+  padding: 0.35rem 0.6rem;
 }
 .line-time {
   font-family: var(--font-mono);
@@ -365,4 +383,19 @@ th {
 }
 label.btn {
   position: relative;
+}
+
+.present-close {
+  position: absolute;
+  top: 2vmin;
+  right: 2vmin;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  border: 2px solid #000;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
 }

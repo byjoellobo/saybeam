@@ -7,8 +7,10 @@ import { compileReplacements, parseReplacements } from '../lib/replacements';
 import { copyText, downloadText, safeFilename, useWakeLock } from '../lib/browser';
 import { getSavedRoom, loadSpeakerPrefs, saveRoom, saveSpeakerPrefs, vocabularyList, type SavedRoom, type SpeakerPrefs } from '../lib/storage';
 import { navigate, paths } from '../lib/router';
+import { audienceDisplay, audienceUrl } from '../lib/links';
 import { createEngine, describeEngine, type CaptionEngine } from '../engines';
 import { detectCapabilities, recommendEngine, type Capabilities } from '../engines/detect';
+import { LocalEngine } from '../engines/local-engine';
 import type { EngineConfig, EngineStats, EngineStatus } from '../engines/types';
 import { EnginePanel } from '../components/EnginePanel';
 import { QrShare } from '../components/QrShare';
@@ -20,15 +22,16 @@ interface SpeakerProps {
   readonly code: string;
 }
 
-/** Room secrets: from this browser's storage, or from a hand-off link (#k=token). */
+/** Room secrets: from this browser's storage, or from a hand-off link (#k=speaker&c=corrector&l=listener). */
 function useSpeakerKey(code: string): SavedRoom | null {
   return useMemo(() => {
     const hash = new URLSearchParams(location.hash.slice(1));
     const k = hash.get('k');
     const c = hash.get('c');
+    const l = hash.get('l');
     if (k && k.length >= 16) {
       const room: SavedRoom = { code, speakerToken: k, correctorToken: c ?? '', title: '', createdAt: Date.now() };
-      saveRoom({ ...(getSavedRoom(code) ?? room), speakerToken: k, ...(c ? { correctorToken: c } : {}) });
+      saveRoom({ ...(getSavedRoom(code) ?? room), speakerToken: k, ...(c ? { correctorToken: c } : {}), ...(l ? { listenerToken: l } : {}) });
       history.replaceState(null, '', location.pathname); // keep the secret out of the address bar
     }
     return getSavedRoom(code);
@@ -56,7 +59,8 @@ export function Speaker({ code }: SpeakerProps) {
   return <SpeakerConsole code={code} room={saved} />;
 }
 
-function SpeakerConsole({ code, room }: { readonly code: string; readonly room: SavedRoom }) {
+function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; readonly room: SavedRoom }) {
+  const [room, setRoom] = useState<SavedRoom>(initialRoom);
   const { client, snap } = useRoom({ code, role: 'speaker', token: room.speakerToken });
   const { view } = snap;
   const [info, setInfo] = useState<ServerInfo | null>(null);
@@ -77,12 +81,25 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
 
   const lang = view.meta?.lang ?? 'en-US';
   const recommendation = useMemo(() => (caps ? recommendEngine(caps, lang) : null), [caps, lang]);
-  const listenUrl = `${publicBase(info)}${paths.listen(code)}`;
+  const isPrivate = view.meta?.private ?? Boolean(room.listenerToken);
+  const listenUrl = audienceUrl(publicBase(info), code, room.listenerToken);
+  const listenDisplay = audienceDisplay(publicBase(info), code, isPrivate);
+  const missingAudienceSecret = isPrivate && !room.listenerToken;
 
   useEffect(() => {
     void fetchInfo().then(setInfo);
     void detectCapabilities().then(setCaps);
   }, []);
+
+  // A replaced link arrives once, to this console only.
+  useEffect(() => {
+    const r = snap.rotation;
+    if (!r) return;
+    setRoom((prev) => (r.target === 'corrector' ? { ...prev, correctorToken: r.token } : { ...prev, listenerToken: r.token }));
+  }, [snap.rotation]);
+
+  // Persist secrets whenever they change (side effects stay out of state updaters).
+  useEffect(() => saveRoom(room), [room]);
 
   useEffect(() => {
     if (!config && recommendation) setConfig(recommendation.config);
@@ -145,7 +162,12 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
 
   const engineFor = useCallback(
     (cfg: EngineConfig): CaptionEngine => {
-      const withVocab: EngineConfig = cfg.kind === 'webspeech' ? { ...cfg, phrases: vocabularyList(prefs.vocabulary) } : cfg.kind === 'whisperlive' ? { ...cfg, hotwords: vocabularyList(prefs.vocabulary).join(',') } : cfg;
+      const withVocab: EngineConfig =
+        cfg.kind === 'webspeech'
+          ? { ...cfg, phrases: vocabularyList(prefs.vocabulary) }
+          : cfg.kind === 'whisperlive'
+            ? { ...cfg, hotwords: vocabularyList(prefs.vocabulary).join(',') }
+            : cfg;
       const key = JSON.stringify([withVocab, info?.localModels ?? false]);
       if (engineRef.current?.key === key) return engineRef.current.engine;
       engineRef.current?.engine.dispose();
@@ -195,6 +217,31 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
     }
   };
 
+  /** Download and load the on-device model now, so class can start offline. */
+  const prepare = async () => {
+    if (config?.kind !== 'local' || busy || !info) return;
+    setBusy(true);
+    try {
+      // Ask the browser not to evict the cached model under storage pressure.
+      await navigator.storage?.persist?.().catch(() => false);
+      const engine = engineFor(config);
+      if (engine instanceof LocalEngine) await engine.ensureLoaded();
+    } catch (err) {
+      setStatus({ phase: 'error', message: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const replaceLink = (target: 'corrector' | 'listener') => {
+    const message =
+      target === 'corrector'
+        ? 'Replace the corrector link? Anyone using the old link is disconnected and needs the new one.'
+        : 'Replace the audience link? Everyone following is disconnected and must scan the new QR code.';
+    if (!confirm(message)) return;
+    if (!client.rotate(target)) alert('You are offline. Try again when the connection is back.');
+  };
+
   const endSession = async () => {
     if (!confirm('End this session for everyone? Listeners keep what they have, and you can still download the transcript.')) return;
     if (running) await pause();
@@ -216,7 +263,8 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
   };
 
   const correctorUrl = room.correctorToken ? `${publicBase(info)}${paths.fix(code, room.correctorToken)}` : null;
-  const handoffUrl = `${publicBase(info)}${paths.speak(code)}#k=${room.speakerToken}${room.correctorToken ? `&c=${room.correctorToken}` : ''}`;
+  const handoffUrl = `${publicBase(info)}${paths.speak(code)}#k=${room.speakerToken}${room.correctorToken ? `&c=${room.correctorToken}` : ''}${room.listenerToken ? `&l=${room.listenerToken}` : ''}`;
+  const modelReady = status.phase === 'ready' || status.phase === 'listening' || status.phase === 'stopped';
   const ended = view.status === 'ended';
 
   return (
@@ -266,6 +314,17 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
                 {busy ? 'Pausing...' : 'Pause'}
               </button>
             )}
+            {!running && config?.kind === 'local' && !modelReady && (
+              <button
+                type="button"
+                class="btn"
+                disabled={busy || !info}
+                onClick={() => void prepare()}
+                title="Download the speech model now, for example at home on good Wi-Fi, so class can start without internet."
+              >
+                Download model for offline use
+              </button>
+            )}
             <div class="live-meta">
               <Meter level={level} active={running} />
               <EngineStatusLine status={status} />
@@ -286,7 +345,17 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
         <aside class="side" aria-label="Room controls">
           <details class="panel" open>
             <summary>Invite the audience</summary>
-            <QrShare code={code} url={listenUrl} title={view.meta?.title ?? ''} />
+            <QrShare code={code} url={listenUrl} displayUrl={listenDisplay} title={view.meta?.title ?? ''} codeAlone={!isPrivate} />
+            {missingAudienceSecret ? (
+              <div class="warn" role="alert">
+                This console does not have the private audience link (it may have been opened from an old hand-off link). Replace the audience link to get a working QR code.{' '}
+                <button type="button" class="btn btn-small" onClick={() => replaceLink('listener')}>
+                  Replace audience link
+                </button>
+              </div>
+            ) : (
+              isPrivate && <p class="hint">Private room: people need this QR code or the copied link. The room code alone will not let them in.</p>
+            )}
             {info?.mode === 'lan' && <p class="hint">Phones must be on the same Wi-Fi as this laptop.</p>}
           </details>
 
@@ -329,7 +398,12 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
             </label>
             <label class="field">
               <span>Vocabulary</span>
-              <textarea rows={3} value={prefs.vocabulary} placeholder="Names and jargon, comma or line separated" onInput={(e) => updatePrefs({ ...prefs, vocabulary: e.currentTarget.value })} />
+              <textarea
+                rows={3}
+                value={prefs.vocabulary}
+                placeholder="Names and jargon, comma or line separated"
+                onInput={(e) => updatePrefs({ ...prefs, vocabulary: e.currentTarget.value })}
+              />
               <small>Boosts recognition with Chrome on-device speech and WhisperLive (hotwords). Takes effect next time you start.</small>
             </label>
           </details>
@@ -340,14 +414,28 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
               <div class="field">
                 <span>Corrector link</span>
                 <small>Anyone with this link can fix captions live. Share it only with your helper.</small>
-                <button type="button" class="btn btn-small" onClick={() => copy('corrector', correctorUrl)}>
-                  {copied === 'corrector' ? 'Copied' : 'Copy corrector link'}
+                <div class="row gap-sm wrap">
+                  <button type="button" class="btn btn-small" onClick={() => copy('corrector', correctorUrl)}>
+                    {copied === 'corrector' ? 'Copied' : 'Copy corrector link'}
+                  </button>
+                  <button type="button" class="btn btn-small btn-ghost" onClick={() => replaceLink('corrector')}>
+                    Replace link
+                  </button>
+                </div>
+              </div>
+            )}
+            {isPrivate && (
+              <div class="field">
+                <span>Audience link</span>
+                <small>If the private QR code or link reached the wrong people, replace it. Everyone following must scan the new code.</small>
+                <button type="button" class="btn btn-small btn-ghost" onClick={() => replaceLink('listener')}>
+                  Replace audience link
                 </button>
               </div>
             )}
             <div class="field">
               <span>Caption from another device</span>
-              <small>Opens this console elsewhere (for example a phone near the speaker). Treat it like a password.</small>
+              <small>Opens this console elsewhere (for example a phone near the speaker). Treat it like a password. After you replace a link, copy a fresh hand-off link.</small>
               <button type="button" class="btn btn-small" onClick={() => copy('handoff', handoffUrl)}>
                 {copied === 'handoff' ? 'Copied' : 'Copy hand-off link'}
               </button>
@@ -358,12 +446,7 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
             <summary>Session</summary>
             <label class="field">
               <span>Session name</span>
-              <input
-                value={view.meta?.title ?? ''}
-                maxLength={120}
-                onChange={(e) => client.setMeta({ title: e.currentTarget.value })}
-                placeholder="Shown to listeners"
-              />
+              <input value={view.meta?.title ?? ''} maxLength={120} onChange={(e) => client.setMeta({ title: e.currentTarget.value })} placeholder="Shown to listeners" />
             </label>
             <label class="switch">
               <input type="checkbox" checked={view.meta?.allowExport ?? true} onChange={(e) => client.setMeta({ allowExport: e.currentTarget.checked })} />
@@ -387,7 +470,7 @@ function SpeakerConsole({ code, room }: { readonly code: string; readonly room: 
         </aside>
       </div>
 
-      {presenting && <PresentOverlay code={code} url={listenUrl} title={view.meta?.title ?? ''} onClose={() => setPresenting(false)} />}
+      {presenting && <PresentOverlay code={code} url={listenUrl} title={view.meta?.title ?? ''} privateRoom={isPrivate} onClose={() => setPresenting(false)} />}
     </main>
   );
 }

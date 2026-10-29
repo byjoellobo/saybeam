@@ -1,0 +1,65 @@
+name: Feature request
+description: Suggest an idea or an improvement.
+title: "[Idea]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. The most useful requests start from a real situation: who needs it, where, and what gets in their way today. Please search the [open issues](https://github.com/mezpos/caption-room/issues) first.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation. For example, "Hard of hearing students in a 200-seat hall cannot tell when the speaker changes."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: Your idea for a solution. Rough is fine.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Other options you have considered
+      description: Workarounds you use today, or other tools that do this.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who would use it?
+      multiple: true
+      options:
+        - Listeners (people reading captions)
+        - Speakers
+        - Correctors
+        - People running a server (cloud or LAN)
+        - Contributors and developers
+    validations:
+      required: false
+
+  - type: textarea
+    id: accessibility
+    attributes:
+      label: Accessibility notes
+      description: Anything about screen readers, braille displays, low vision, keyboard use or reading speed that the design should keep in mind.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Can you help?
+      options:
+        - label: I would like to work on this myself.
+          required: false
+        - label: I can test this with real users (for example, in a classroom or a place of worship).
+          required: false

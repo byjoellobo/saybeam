@@ -54,6 +54,7 @@ fn cleans_control_and_bidi_characters() {
         code: "ABCDEF".into(),
         speaker_token_hash: String::new(),
         corrector_token_hash: String::new(),
+        listener_token_hash: None,
         title: Some(" Bio\u{2066}logy\n101 ".into()),
         lang: None,
         allow_export: None,

@@ -7,10 +7,10 @@
 
 use std::collections::HashMap;
 
-use crate::codes::{hash_token, timing_safe_equal};
+use crate::codes::{generate_token, hash_token, timing_safe_equal};
 use crate::protocol::{
-    ClientMsg, ErrorCode, PROTOCOL_VERSION, PartialCaption, Presence, Role, RoomMeta, RoomStatus,
-    RoomSummary, Segment, ServerMsg, WelcomeMode, close, limits,
+    ClientMsg, ErrorCode, LinkTarget, PROTOCOL_VERSION, PartialCaption, Presence, Role, RoomMeta,
+    RoomStatus, RoomSummary, Segment, ServerMsg, WelcomeMode, close, limits,
 };
 use crate::ratelimit::ConnLimits;
 use crate::validate::{
@@ -47,6 +47,13 @@ pub struct CloseRequest {
     pub reason: &'static str,
 }
 
+/// Close every connection with `role` except the sender.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CloseOthers {
+    pub role: Role,
+    pub close: CloseRequest,
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Outcome {
     pub send: Vec<Outbound>,
@@ -56,6 +63,8 @@ pub struct Outcome {
     pub close: Option<CloseRequest>,
     /// The newest speaker wins: close every other speaker connection.
     pub replace_other_speakers: bool,
+    /// A link was replaced: close every other connection with this role.
+    pub close_others: Option<CloseOthers>,
     /// Presence counts changed (the hub debounces the broadcast).
     pub presence_changed: bool,
     /// Room content changed (finals, corrections, end).
@@ -100,6 +109,8 @@ pub struct RoomInit {
     pub code: String,
     pub speaker_token_hash: String,
     pub corrector_token_hash: String,
+    /// Makes the room private: listeners need this secret from the QR link.
+    pub listener_token_hash: Option<String>,
     pub title: Option<String>,
     pub lang: Option<String>,
     pub allow_export: Option<bool>,
@@ -113,6 +124,8 @@ pub struct Room {
     status: RoomStatus,
     speaker_token_hash: String,
     corrector_token_hash: String,
+    /// Present only for private rooms.
+    listener_token_hash: Option<String>,
     /// Bumped by every new final and every correction.
     rev: u64,
     last_activity: u64,
@@ -139,10 +152,12 @@ impl Room {
                 lang: init.lang.unwrap_or_else(|| "en-US".to_string()),
                 allow_export: init.allow_export.unwrap_or(true),
                 created_at: now,
+                private: init.listener_token_hash.is_some(),
             },
             status: RoomStatus::Live,
             speaker_token_hash: init.speaker_token_hash,
             corrector_token_hash: init.corrector_token_hash,
+            listener_token_hash: init.listener_token_hash,
             rev: 0,
             last_activity: now,
             segments: Vec::new(),
@@ -168,11 +183,18 @@ impl Room {
         self.last_activity
     }
 
+    /// Public description for the join screen. Private rooms do not reveal their title.
     pub fn summary(&self) -> RoomSummary {
+        let private = self.meta.private;
         RoomSummary {
             code: self.code.clone(),
             status: self.status,
-            title: self.meta.title.clone(),
+            title: if private {
+                String::new()
+            } else {
+                self.meta.title.clone()
+            },
+            private,
         }
     }
 
@@ -202,18 +224,18 @@ impl Room {
             Ok(msg) => msg,
             Err(reason) => return self.strike(conn, ErrorCode::BadFrame, reason),
         };
-        // A history page can be large, so it costs more than an ordinary frame.
-        let history_extra = limits::HISTORY_COST - 1.0;
-        if matches!(msg, ClientMsg::History { .. })
+        // History pages can be large and rotation does crypto work, so both cost more.
+        let expensive = match msg {
+            ClientMsg::History { .. } => Some("Slow down: too many history requests."),
+            ClientMsg::Rotate { .. } => Some("Slow down."),
+            _ => None,
+        };
+        if let Some(message) = expensive
             && !self
                 .conn_limits
-                .charge(conn.id, conn.role, history_extra, now)
+                .charge(conn.id, conn.role, limits::HISTORY_COST - 1.0, now)
         {
-            return self.strike(
-                conn,
-                ErrorCode::RateLimited,
-                "Slow down: too many history requests.",
-            );
+            return self.strike(conn, ErrorCode::RateLimited, message);
         }
         self.handle(conn, msg, others, now)
     }
@@ -259,6 +281,7 @@ impl Room {
                 ts,
                 server_time: now,
             }),
+            ClientMsg::Rotate { target } => self.on_rotate(role, target),
         }
     }
 
@@ -299,7 +322,8 @@ impl Room {
             return Outcome::error(ErrorCode::Invalid, "Already joined.");
         }
         let role = hello.role;
-        if role != Role::Listener && !hello.token.is_some_and(|t| self.check_token(role, t)) {
+        let needs_token = role != Role::Listener || self.meta.private;
+        if needs_token && !hello.token.is_some_and(|t| self.check_token(role, t)) {
             return Outcome::error(
                 ErrorCode::Unauthorized,
                 "This link is not valid for that role.",
@@ -560,6 +584,32 @@ impl Room {
         Outcome::reply(ServerMsg::History { segments, has_more })
     }
 
+    fn on_rotate(&mut self, role: Role, target: LinkTarget) -> Outcome {
+        if role != Role::Speaker {
+            return Outcome::error(ErrorCode::Forbidden, "Only the speaker can replace links.");
+        }
+        if target == LinkTarget::Listener && !self.meta.private {
+            return Outcome::error(ErrorCode::Invalid, "This room is not private.");
+        }
+        // Store the new hash before anyone learns the token. Allowed after the session ended.
+        let token = generate_token();
+        let hash = hash_token(&token);
+        match target {
+            LinkTarget::Corrector => self.corrector_token_hash = hash,
+            LinkTarget::Listener => self.listener_token_hash = Some(hash),
+        }
+        Outcome {
+            close_others: Some(CloseOthers {
+                role: target.role(),
+                close: CloseRequest {
+                    code: close::UNAUTHORIZED,
+                    reason: "link replaced",
+                },
+            }),
+            ..Outcome::reply(ServerMsg::Rotated { target, token })
+        }
+    }
+
     /* ------------------------------- helpers ------------------------------- */
 
     /// Reply with an error, and close connections that keep sending rejected frames.
@@ -618,11 +668,24 @@ impl Room {
         self.segments.get_mut(index)
     }
 
+    /// The speaker token grants every role, the corrector token grants corrector
+    /// and listener, and the listener token (private rooms) grants listener only.
     fn check_token(&self, role: Role, token: &str) -> bool {
         let hash = hash_token(token);
-        // The speaker token can do everything; the corrector token only corrects.
-        timing_safe_equal(&hash, &self.speaker_token_hash)
-            || (role == Role::Corrector && timing_safe_equal(&hash, &self.corrector_token_hash))
+        if timing_safe_equal(&hash, &self.speaker_token_hash) {
+            return true;
+        }
+        if role == Role::Speaker {
+            return false;
+        }
+        if timing_safe_equal(&hash, &self.corrector_token_hash) {
+            return true;
+        }
+        role == Role::Listener
+            && self
+                .listener_token_hash
+                .as_deref()
+                .is_some_and(|expected| timing_safe_equal(&hash, expected))
     }
 }
 

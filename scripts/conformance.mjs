@@ -98,7 +98,10 @@ async function main() {
   check('GET /api/rooms/:code is 404 for an unknown code', (await fetch(`${base}/api/rooms/ZZZZZZ`)).status === 404);
 
   const badWs = client('NOPE0');
-  const badResult = await badWs.opened.then(() => 'opened', (e) => e.message);
+  const badResult = await badWs.opened.then(
+    () => 'opened',
+    (e) => e.message,
+  );
   check('WS to an invalid code is refused', badResult !== 'opened', badResult);
 
   // Speaker joins.
@@ -134,7 +137,11 @@ async function main() {
   speaker.send({ t: 'final', id: 'seg-1', text: ' Good morning, everyone. ', startMs: 0, endMs: 1800 });
   const lf = await listener.next(byType('final'));
   const sf = await speaker.next(byType('final'));
-  check('final reaches listener, trimmed, seq 1 rev 1', lf?.seg?.seq === 1 && lf.seg.rev === 1 && lf.seg.text === 'Good morning, everyone.' && lf.seg.startMs === 0, JSON.stringify(lf));
+  check(
+    'final reaches listener, trimmed, seq 1 rev 1',
+    lf?.seg?.seq === 1 && lf.seg.rev === 1 && lf.seg.text === 'Good morning, everyone.' && lf.seg.startMs === 0,
+    JSON.stringify(lf),
+  );
   check('final reaches speaker too', sf?.seg?.seq === 1);
 
   speaker.send({ t: 'final', id: 'seg-1', text: 'resent after reconnect' });
@@ -211,6 +218,61 @@ async function main() {
   check('malformed JSON gets bad-frame', (await speaker2.next(byType('error')))?.code === 'bad-frame');
 
   for (const c of [speaker2, back, corrector]) c.close();
+
+  // Private rooms and link rotation.
+  const privRes = await fetch(`${base}/api/rooms`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Secret', private: true }) });
+  const priv = await privRes.json();
+  check('private room returns a listener token', privRes.status === 201 && /^[A-Za-z0-9_-]{43}$/.test(priv.listenerToken ?? ''), JSON.stringify(Object.keys(priv)));
+  check('public rooms have no listener token', room.listenerToken === undefined);
+  const psum = await fetch(`${base}/api/rooms/${priv.code}`).then((r) => r.json());
+  check('describe hides a private title', psum.private === true && psum.title === '', JSON.stringify(psum));
+  check('describe reports public rooms as not private', summaryBody.private === false, JSON.stringify(summaryBody));
+
+  const stranger = client(priv.code);
+  await stranger.opened;
+  stranger.send({ t: 'hello', role: 'listener' });
+  const sDeny = await stranger.next(byType('error'));
+  const sClose = await Promise.race([stranger.closed, sleep(3000).then(() => null)]);
+  check('private room refuses a listener without the secret (4003)', sDeny?.code === 'unauthorized' && sClose?.code === 4003, JSON.stringify({ sDeny, sClose }));
+
+  const insider = client(priv.code);
+  await insider.opened;
+  insider.send({ t: 'hello', role: 'listener', token: priv.listenerToken });
+  const iw = await insider.next(byType('welcome'));
+  check('private room admits a listener with the secret', iw?.meta?.private === true && iw.meta.title === 'Secret', JSON.stringify(iw?.meta));
+
+  const pspeaker = client(priv.code);
+  await pspeaker.opened;
+  pspeaker.send({ t: 'hello', role: 'speaker', token: priv.speakerToken });
+  await pspeaker.next(byType('welcome'));
+  const pcorr = client(priv.code);
+  await pcorr.opened;
+  pcorr.send({ t: 'hello', role: 'corrector', token: priv.correctorToken });
+  await pcorr.next(byType('welcome'));
+
+  pspeaker.send({ t: 'rotate', target: 'corrector' });
+  const rot = await pspeaker.next(byType('rotated'));
+  const corrClosed = await Promise.race([pcorr.closed, sleep(3000).then(() => null)]);
+  check('rotate corrector returns a new secret to the speaker', rot?.target === 'corrector' && /^[A-Za-z0-9_-]{43}$/.test(rot?.token ?? ''), JSON.stringify(rot));
+  check('rotate corrector disconnects correctors with 4003', corrClosed?.code === 4003, JSON.stringify(corrClosed));
+  const oldCorr = client(priv.code);
+  await oldCorr.opened;
+  oldCorr.send({ t: 'hello', role: 'corrector', token: priv.correctorToken });
+  check('the old corrector link stops working', (await oldCorr.next(byType('error')))?.code === 'unauthorized');
+
+  pspeaker.send({ t: 'rotate', target: 'listener' });
+  const lrot = await pspeaker.next(byType('rotated'));
+  const insiderClosed = await Promise.race([insider.closed, sleep(3000).then(() => null)]);
+  check('rotate listener disconnects listeners with 4003', lrot?.target === 'listener' && insiderClosed?.code === 4003, JSON.stringify({ lrot, insiderClosed }));
+
+  const pubSpeaker = client(room.code);
+  await pubSpeaker.opened;
+  pubSpeaker.send({ t: 'hello', role: 'speaker', token: room.speakerToken });
+  await pubSpeaker.next(byType('welcome'));
+  pubSpeaker.send({ t: 'rotate', target: 'listener' });
+  check('rotating the listener link of a public room is invalid', (await pubSpeaker.next(byType('error')))?.code === 'invalid');
+
+  for (const c of [pspeaker, oldCorr, pubSpeaker]) c.close();
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 }

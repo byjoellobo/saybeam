@@ -1,0 +1,177 @@
+name: Field test result
+description: Share numbers from /bench for the latency and accent studies.
+title: "[Field test]: "
+labels: ["field-test"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing. These results decide which speech engine Caption Room suggests on each kind of device and for each accent. The method and the pass and fail thresholds are in [docs/risk-tests.md](https://github.com/mezpos/caption-room/blob/main/docs/risk-tests.md).
+
+        **How to get the numbers:** open `/bench` on the device you are testing, run "Transcribe an audio file" or "Record and read aloud", then use **Export CSV**. One issue per device is ideal; paste every run from that device into the CSV box below.
+
+        **Privacy and consent, please read:**
+        - Numbers are enough. You do not need to share audio.
+        - Only share a recording if the speaker agreed, in writing, to it being published openly.
+        - **Never upload recordings of children or anyone under 18**, even with permission.
+        - Do not write anyone's name. Use a broad label such as "South India, Tamil first language". Check the `speakerLabel` column of your CSV too.
+
+  - type: dropdown
+    id: study
+    attributes:
+      label: Which study is this for?
+      options:
+        - "Risk 1: latency on low-end devices"
+        - "Risk 2: accuracy on Indian-accented and code-mixed English"
+        - Both
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Device tier
+      description: Tiers are defined in docs/risk-tests.md.
+      options:
+        - "A: low-end phone (2 to 3 GB RAM)"
+        - "B: entry laptop (Celeron or Core i3, 4 GB RAM)"
+        - "C: Chromebook"
+        - "D: mid laptop (Core i5 or Ryzen 5, 8 GB RAM)"
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device model, RAM and power state
+      placeholder: "Example: Redmi 12C, 3 GB RAM, on battery"
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: "Example: Chrome 142 on Android 14"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine and model
+      options:
+        - Moonshine Tiny (on this device)
+        - Moonshine Base (on this device)
+        - Whisper Tiny English (on this device)
+        - Whisper Base (on this device)
+        - Whisper Small (on this device)
+        - Browser speech (speech service)
+        - Browser speech (on-device mode)
+        - WhisperLive server (say which model in the notes)
+    validations:
+      required: true
+
+  - type: input
+    id: backend
+    attributes:
+      label: Backend
+      description: As shown in the bench or the Performance panel.
+      placeholder: "Example: WebGPU, or WASM (4 threads)"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - File ("Transcribe an audio file")
+        - Live ("Record and read aloud")
+        - Live (speaker console, sustained run)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: passage
+    attributes:
+      label: Passage
+      options:
+        - Classroom, Indian English
+        - Code-mixed Hindi and English (romanised)
+        - Names, places and numbers
+        - Place of worship announcement
+        - Hindi (Devanagari)
+        - Spontaneous speech with a hand-made reference
+        - The 5-minute reference lecture
+        - Svarah sample
+        - MUCS 2021 sample
+        - Other (describe in the notes)
+    validations:
+      required: true
+
+  - type: input
+    id: speaker-label
+    attributes:
+      label: Speaker region or accent label
+      description: A broad label only. No names.
+      placeholder: "Example: North-East India, Assamese first language"
+    validations:
+      required: false
+
+  - type: input
+    id: wer
+    attributes:
+      label: WER (%)
+      description: Word error rate. Lower is better.
+      placeholder: "Example: 12.4"
+    validations:
+      required: false
+
+  - type: input
+    id: rtf
+    attributes:
+      label: RTF
+      description: Real-time factor, compute time divided by audio length. Under 0.5 is a pass.
+      placeholder: "Example: 0.31"
+    validations:
+      required: false
+
+  - type: input
+    id: p95
+    attributes:
+      label: p95 (ms)
+      description: File mode, the p95 per-utterance compute time. Speaker console, the p95 caption lag if you noted it.
+      placeholder: "Example: 850"
+    validations:
+      required: false
+
+  - type: textarea
+    id: csv
+    attributes:
+      label: Exported results (CSV or JSON)
+      description: Paste the export from /bench. Remove any names first.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Room noise, microphone distance, model load times (cold or warm), crashes, thermal slowdown, anything surprising.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Consent and privacy
+      options:
+        - label: Everyone whose speech is measured here agreed to their results being shared.
+          required: true
+        - label: This report includes no recordings of anyone under 18.
+          required: true
+        - label: This report contains no names or other personal details.
+          required: true

@@ -47,12 +47,12 @@ export async function startCapture(onChunk: (samples: Float32Array, sampleRate: 
         node.port.onmessage = null;
         source.disconnect();
         node.disconnect();
-        stream.getTracks().forEach((t) => t.stop());
+        for (const t of stream.getTracks()) t.stop();
         await ctx.close().catch(() => undefined);
       },
     };
   } catch (err) {
-    stream.getTracks().forEach((t) => t.stop());
+    for (const t of stream.getTracks()) t.stop();
     await ctx.close().catch(() => undefined);
     throw err;
   }
@@ -86,7 +86,9 @@ export async function decodeToMono16k(file: Blob): Promise<Float32Array> {
 export function encodeWav(samples: Float32Array, sampleRate = TARGET_RATE): Blob {
   const buffer = new ArrayBuffer(44 + samples.length * 2);
   const view = new DataView(buffer);
-  const write = (offset: number, s: string) => [...s].forEach((c, i) => view.setUint8(offset + i, c.charCodeAt(0)));
+  const write = (offset: number, s: string): void => {
+    for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
+  };
   write(0, 'RIFF');
   view.setUint32(4, 36 + samples.length * 2, true);
   write(8, 'WAVE');
@@ -100,6 +102,6 @@ export function encodeWav(samples: Float32Array, sampleRate = TARGET_RATE): Blob
   view.setUint16(34, 16, true);
   write(36, 'data');
   view.setUint32(40, samples.length * 2, true);
-  samples.forEach((s, i) => view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, s)) * 0x7fff, true));
+  for (let i = 0; i < samples.length; i++) view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i] ?? 0)) * 0x7fff, true);
   return new Blob([buffer], { type: 'audio/wav' });
 }

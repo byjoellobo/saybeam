@@ -103,22 +103,14 @@ export function TranscriptEditor({ segments, pending = [], partial, onCorrect, h
             </div>
           </li>
         ) : (
-          <li
-            key={s.seq}
-            class={`line${s.edited ? ' edited' : ''}${s.text ? '' : ' removed'}`}
-            tabIndex={0}
-            onClick={() => begin(s)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                begin(s);
-              }
-            }}
-            title="Click to correct"
-          >
-            {s.startMs !== undefined && <span class="line-time">{formatTimestamp(s.startMs, '.').slice(0, 8)}</span>}
-            <span class="line-text">{s.text || 'Removed'}</span>
-            {s.edited && <span class="badge">edited</span>}
+          <li key={s.seq} class={`line${s.edited ? ' edited' : ''}${s.text ? '' : ' removed'}`}>
+            {/* A real button: announced as editable, and Enter or Space work everywhere. */}
+            <button type="button" class="line-button" onClick={() => begin(s)} title="Click to correct">
+              {s.startMs !== undefined && <span class="line-time">{formatTimestamp(s.startMs, '.').slice(0, 8)}</span>}
+              <span class="line-text">{s.text || 'Removed'}</span>
+              {s.edited && <span class="badge">edited</span>}
+              <span class="sr-only">, correct this line</span>
+            </button>
           </li>
         ),
       )}

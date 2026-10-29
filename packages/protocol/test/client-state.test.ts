@@ -9,7 +9,7 @@ const welcome = (over: Partial<WelcomeMsg> = {}): WelcomeMsg => ({
   v: 1,
   room: 'ABCDEF',
   role: 'listener',
-  meta: { title: 'T', lang: 'en-US', allowExport: true, createdAt: 0 },
+  meta: { title: 'T', lang: 'en-US', allowExport: true, createdAt: 0, private: false },
   status: 'live',
   mode: 'replace',
   segments: [seg(1), seg(2)],
@@ -75,7 +75,7 @@ describe('applyServerMsg', () => {
     v = applyServerMsg(v, { t: 'correct', seq: 5, text: 'five', rev: 7, by: 'corrector' });
     expect(v.segments[0]).toMatchObject({ text: 'five', edited: true, rev: 7 });
     expect(v.rev).toBe(7);
-    v = applyServerMsg(v, { t: 'meta', meta: { title: 'New', lang: 'hi-IN', allowExport: false, createdAt: 0 } });
+    v = applyServerMsg(v, { t: 'meta', meta: { title: 'New', lang: 'hi-IN', allowExport: false, createdAt: 0, private: false } });
     expect(v.meta?.title).toBe('New');
     v = applyServerMsg(v, { t: 'partial', id: 'x', text: 'hey' });
     v = applyServerMsg(v, { t: 'status', status: 'paused' });

@@ -109,6 +109,26 @@ pub struct RoomMeta {
     pub lang: String,
     pub allow_export: bool,
     pub created_at: u64,
+    /// Listeners need the secret from the QR link, not just the code.
+    pub private: bool,
+}
+
+/// Which shareable link a `rotate` replaces.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LinkTarget {
+    Corrector,
+    Listener,
+}
+
+impl LinkTarget {
+    /// The role whose connections use this link.
+    pub fn role(self) -> Role {
+        match self {
+            LinkTarget::Corrector => Role::Corrector,
+            LinkTarget::Listener => Role::Listener,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
@@ -206,6 +226,10 @@ pub enum ClientMsg {
     Ping {
         ts: serde_json::Number,
     },
+    /// Replace a link's secret (speaker only).
+    Rotate {
+        target: LinkTarget,
+    },
 }
 
 /// Server-to-client message.
@@ -261,6 +285,11 @@ pub enum ServerMsg {
         ts: serde_json::Number,
         server_time: u64,
     },
+    /// Reply to `rotate`, sent to the speaker only.
+    Rotated {
+        target: LinkTarget,
+        token: String,
+    },
 }
 
 impl ServerMsg {
@@ -288,6 +317,8 @@ pub struct CreateRoomRequest {
     pub title: Option<String>,
     pub lang: Option<String>,
     pub allow_export: Option<bool>,
+    /// Require the listener secret (carried in the QR link) to join.
+    pub private: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -296,13 +327,18 @@ pub struct CreateRoomResponse {
     pub code: String,
     pub speaker_token: String,
     pub corrector_token: String,
+    /// Present only for private rooms.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub listener_token: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct RoomSummary {
     pub code: String,
     pub status: RoomStatus,
+    /// Empty for private rooms: the code alone reveals nothing but existence.
     pub title: String,
+    pub private: bool,
 }
 
 #[cfg(test)]
@@ -373,6 +409,7 @@ mod tests {
                 lang: "en-US".into(),
                 allow_export: true,
                 created_at: 1,
+                private: false,
             },
             status: RoomStatus::Live,
             mode: WelcomeMode::Replace,

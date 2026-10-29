@@ -203,7 +203,7 @@ async fn live_session_with_partials_finals_and_resume() {
     assert_eq!(summary.status, 200);
     assert_eq!(
         summary.json(),
-        json!({"code": code, "status": "live", "title": "Physics"})
+        json!({"code": code, "status": "live", "title": "Physics", "private": false})
     );
 
     // Speaker and listener join.
@@ -543,4 +543,71 @@ async fn serves_models_with_resource_policy() {
         model.header("cross-origin-embedder-policy").as_deref(),
         Some("credentialless")
     );
+}
+
+#[tokio::test]
+async fn private_rooms_and_link_rotation() {
+    let addr = start("private").await;
+    let public = create_room(addr).await;
+    assert!(
+        public.get("listenerToken").is_none(),
+        "public rooms have no listener secret"
+    );
+
+    let res = http(
+        addr,
+        "POST",
+        "/api/rooms",
+        r#"{"title":"Staff meeting","private":true}"#,
+    )
+    .await;
+    assert_eq!(res.status, 201);
+    let room = res.json();
+    let code = room["code"].as_str().expect("code").to_string();
+    let listener_token = room["listenerToken"]
+        .as_str()
+        .expect("listener token")
+        .to_string();
+    assert_eq!(listener_token.len(), 43);
+
+    // The code alone reveals nothing but existence.
+    let summary = http(addr, "GET", &format!("/api/rooms/{code}"), "").await;
+    assert_eq!(
+        summary.json(),
+        json!({"code": code, "status": "live", "title": "", "private": true})
+    );
+
+    // Listeners need the secret from the QR link.
+    let mut anonymous = ws(addr, &code).await;
+    send(&mut anonymous, json!({"t": "hello", "role": "listener"})).await;
+    assert_eq!(
+        next_of(&mut anonymous, "error").await["code"],
+        "unauthorized"
+    );
+    assert_eq!(close_code(&mut anonymous).await, Some(4003));
+    let listener_hello = json!({"t": "hello", "role": "listener", "token": listener_token});
+    let (mut listener, lw) = join(addr, &code, listener_hello.clone()).await;
+    assert_eq!(lw["meta"]["private"], true);
+    assert_eq!(lw["meta"]["title"], "Staff meeting");
+
+    // The speaker replaces the listener link: the old one stops working at once.
+    let speaker_hello = json!({"t": "hello", "role": "speaker", "token": room["speakerToken"]});
+    let (mut speaker, _) = join(addr, &code, speaker_hello).await;
+    send(&mut speaker, json!({"t": "rotate", "target": "listener"})).await;
+    let rotated = next_of(&mut speaker, "rotated").await;
+    assert_eq!(rotated["target"], "listener");
+    let fresh = rotated["token"].as_str().expect("new token").to_string();
+    assert_ne!(fresh, listener_token);
+    assert_eq!(close_code(&mut listener).await, Some(4003));
+
+    let mut stale = ws(addr, &code).await;
+    send(&mut stale, listener_hello).await;
+    assert_eq!(next_of(&mut stale, "error").await["code"], "unauthorized");
+    let (_, again) = join(
+        addr,
+        &code,
+        json!({"t": "hello", "role": "listener", "token": fresh}),
+    )
+    .await;
+    assert_eq!(again["role"], "listener");
 }

@@ -7,6 +7,8 @@ export interface RoomRecord {
   readonly status: RoomStatus;
   readonly speakerTokenHash: string;
   readonly correctorTokenHash: string;
+  /** Present only for private rooms. */
+  readonly listenerTokenHash?: string;
   /** Bumped on every new final and every correction. */
   readonly rev: number;
   readonly lastSeq: number;

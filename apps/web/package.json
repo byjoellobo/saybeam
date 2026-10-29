@@ -22,5 +22,6 @@
     "vite": "^8.3.5",
     "vite-plugin-pwa": "^2.0.0",
     "workbox-window": "^7.4.1"
-  }
+  },
+  "license": "AGPL-3.0-or-later"
 }

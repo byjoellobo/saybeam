@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import preact from '@preact/preset-vite';
@@ -14,6 +14,38 @@ function ortVersion(): string {
     if (existsSync(pkg)) return (JSON.parse(readFileSync(pkg, 'utf8')) as { version: string }).version;
   }
   throw new Error('onnxruntime-web is not installed; run npm install');
+}
+
+/** npm packages that actually end up in the bundles (main app and workers), for THIRD_PARTY_NOTICES.md. */
+const bundledPackageDirs = new Set<string>();
+
+function collectBundledPackages(write: boolean): Plugin {
+  return {
+    name: 'caption-room:collect-bundled-packages',
+    apply: 'build',
+    generateBundle(_opts, bundle) {
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== 'chunk') continue;
+        for (const id of chunk.moduleIds) {
+          const m = /^(.*[\\/]node_modules[\\/](?:@[^\\/]+[\\/])?[^\\/]+)[\\/]/.exec(id.replace(/^\0/, ''));
+          if (m?.[1]) bundledPackageDirs.add(m[1]);
+        }
+      }
+    },
+    closeBundle() {
+      if (!write) return;
+      // Kept out of dist (which is deployed) and stored relative to the repo, so no build-machine paths ship.
+      const repoRoot = join(here, '..', '..');
+      const list = [...bundledPackageDirs]
+        .map((dir) => {
+          const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { name: string; version: string };
+          return { name: pkg.name, version: pkg.version, dir: relative(repoRoot, dir).replaceAll('\\', '/') };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+      mkdirSync(join(here, '.build'), { recursive: true });
+      writeFileSync(join(here, '.build', 'bundled-packages.json'), JSON.stringify(list, null, 2));
+    },
+  };
 }
 
 /**
@@ -65,6 +97,7 @@ export default defineConfig({
     preact(),
     dropOrtWasm(),
     pinCspToOrt(),
+    collectBundledPackages(true),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false,
@@ -104,7 +137,11 @@ export default defineConfig({
       },
     }),
   ],
-  worker: { format: 'es', plugins: () => [dropOrtWasm()] },
+  define: {
+    // AGPL section 13: the app links to the source of the code it is running.
+    __SOURCE_URL__: JSON.stringify(process.env.CAPTION_ROOM_SOURCE_URL ?? 'https://github.com/mezpos/caption-room'),
+  },
+  worker: { format: 'es', plugins: () => [dropOrtWasm(), collectBundledPackages(false)] },
   build: { target: 'es2022', sourcemap: true },
   server: {
     headers: isolation,

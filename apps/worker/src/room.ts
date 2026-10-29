@@ -21,7 +21,9 @@ const HELLO_TIMEOUT_MS = 20_000;
 export interface RoomSummary {
   readonly code: string;
   readonly status: RoomStatus;
+  /** Empty for private rooms: the code alone reveals nothing but existence. */
   readonly title: string;
+  readonly private: boolean;
 }
 
 export class Room extends DurableObject<Env> {
@@ -57,7 +59,9 @@ export class Room extends DurableObject<Env> {
   async describe(): Promise<RoomSummary | null> {
     if (!this.ready) return null;
     const room = new SqlRoomStore(this.ctx.storage).loadRoom();
-    return room ? { code: room.code, status: room.status, title: room.meta.title } : null;
+    if (!room) return null;
+    const isPrivate = room.meta.private ?? room.listenerTokenHash !== undefined;
+    return { code: room.code, status: room.status, title: isPrivate ? '' : room.meta.title, private: isPrivate };
   }
 
   override async fetch(request: Request): Promise<Response> {
@@ -145,6 +149,12 @@ export class Room extends DurableObject<Env> {
     if (outcome.replaceOtherSpeakers) {
       for (const [peer, c] of this.conns) {
         if (peer !== ws && c.role === 'speaker') safeClose(peer, CLOSE.replaced, 'replaced by a newer speaker connection');
+      }
+    }
+    if (outcome.closeRoles) {
+      const { roles, code, reason } = outcome.closeRoles;
+      for (const [peer, c] of this.conns) {
+        if (peer !== ws && c.role !== null && roles.includes(c.role)) safeClose(peer, code, reason);
       }
     }
     if (outcome.close) safeClose(ws, outcome.close.code, outcome.close.reason);

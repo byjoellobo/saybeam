@@ -6,7 +6,17 @@
  */
 import { startCapture, type CaptureHandle } from './audio-capture';
 import { Resampler, TARGET_RATE, rms } from './resample';
-import { buildConfig, EMPTY_MERGE, END_OF_AUDIO, isMixedContentBlocked, mergeSegments, parseServerMessage, toWirePcm, type MergeState, type WlSegment } from './whisperlive-protocol';
+import {
+  buildConfig,
+  EMPTY_MERGE,
+  END_OF_AUDIO,
+  isMixedContentBlocked,
+  mergeSegments,
+  parseServerMessage,
+  toWirePcm,
+  type MergeState,
+  type WlSegment,
+} from './whisperlive-protocol';
 import type { CaptionEngine, EngineCallbacks, WhisperLiveEngineConfig } from './types';
 
 const READY_TIMEOUT_MS = 180_000; // first connection may download the model
@@ -51,7 +61,9 @@ export class WhisperLiveEngine implements CaptionEngine {
   async start(): Promise<void> {
     validateServerUrl(this.cfg.url);
     if (isMixedContentBlocked(this.cfg.url, location.protocol)) {
-      throw new Error('Browsers block ws:// connections from an https page. Put WhisperLive behind a TLS proxy (wss://), run it on this computer (ws://localhost), or use LAN mode.');
+      throw new Error(
+        'Browsers block ws:// connections from an https page. Put WhisperLive behind a TLS proxy (wss://), run it on this computer (ws://localhost), or use LAN mode.',
+      );
     }
     this.wanted = true;
     this.startedAt = performance.now();

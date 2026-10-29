@@ -78,8 +78,19 @@ describe('replacements', () => {
 
 describe('WhisperLive protocol', () => {
   it('builds the first message with required keys', () => {
-    expect(buildConfig({ uid: 'u', language: 'en', model: 'small' })).toMatchObject({ uid: 'u', language: 'en', task: 'transcribe', model: 'small', use_vad: true, send_last_n_segments: 10 });
-    expect(buildConfig({ uid: 'u', language: null, model: 'small', hotwords: 'IIT,NCERT', initialPrompt: 'Physics' })).toMatchObject({ hotwords: 'IIT,NCERT', initial_prompt: 'Physics', language: null });
+    expect(buildConfig({ uid: 'u', language: 'en', model: 'small' })).toMatchObject({
+      uid: 'u',
+      language: 'en',
+      task: 'transcribe',
+      model: 'small',
+      use_vad: true,
+      send_last_n_segments: 10,
+    });
+    expect(buildConfig({ uid: 'u', language: null, model: 'small', hotwords: 'IIT,NCERT', initialPrompt: 'Physics' })).toMatchObject({
+      hotwords: 'IIT,NCERT',
+      initial_prompt: 'Physics',
+      language: null,
+    });
   });
 
   it('parses every server message kind and ignores other uids', () => {

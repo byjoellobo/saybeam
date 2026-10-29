@@ -16,6 +16,7 @@ import {
   type FinalMsg,
   type HelloMsg,
   type HistoryMsg,
+  type LinkTarget,
   type MetaMsg,
   type PartialCaption,
   type PartialMsg,
@@ -26,7 +27,7 @@ import {
   type ServerMsg,
   type StatusMsg,
 } from './messages';
-import { hashToken, timingSafeEqual } from './codes';
+import { generateToken, hashToken, timingSafeEqual } from './codes';
 import { parseClientFrame } from './schema';
 import type { RoomRecord, RoomStore } from './store';
 
@@ -51,6 +52,8 @@ export interface Outcome {
   readonly close?: { readonly code: number; readonly reason: string };
   /** Host must close every other speaker connection: the newest speaker wins. */
   readonly replaceOtherSpeakers?: boolean;
+  /** Host must close every other connection with one of these roles (a link was replaced). */
+  readonly closeRoles?: { readonly roles: readonly Role[]; readonly code: number; readonly reason: string };
   /** Host should broadcast fresh presence counts (debounced). */
   readonly presenceChanged?: boolean;
   /** Room content changed; host may push back its expiry. */
@@ -61,6 +64,8 @@ export interface InitRoomInput {
   readonly code: string;
   readonly speakerTokenHash: string;
   readonly correctorTokenHash: string;
+  /** Makes the room private: listeners need this secret from the QR link. */
+  readonly listenerTokenHash?: string;
   readonly title?: string;
   readonly lang?: string;
   readonly allowExport?: boolean;
@@ -89,12 +94,13 @@ export type PresenceSource = Presence | (() => Presence);
  * Captions are plain text. Strip control characters (they could forge extra
  * cues in exported SRT/VTT files) and bidi overrides (they can spoof titles).
  */
+// Written with escapes on purpose: never put invisible control or bidi characters in source.
+// biome-ignore lint/suspicious/noControlCharactersInRegex: removing control characters is the point
+const CONTROL_RUN = /[\u0000-\u001f\u007f]+/g;
+const BIDI_OVERRIDES = /[\u202a-\u202e\u2066-\u2069]/g;
+
 export function cleanText(text: string): string {
-  return text
-    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
-    .replace(/[‪-‮⁦-⁩]/g, '')
-    .replace(/ {2,}/g, ' ')
-    .trim();
+  return text.replace(CONTROL_RUN, ' ').replace(BIDI_OVERRIDES, '').replace(/ {2,}/g, ' ').trim();
 }
 
 export class RoomCore {
@@ -118,6 +124,7 @@ export class RoomCore {
       lang: input.lang ?? 'en-US',
       allowExport: input.allowExport ?? true,
       createdAt: t,
+      private: Boolean(input.listenerTokenHash),
     };
     this.save({
       code: input.code,
@@ -125,6 +132,7 @@ export class RoomCore {
       status: 'live',
       speakerTokenHash: input.speakerTokenHash,
       correctorTokenHash: input.correctorTokenHash,
+      ...(input.listenerTokenHash ? { listenerTokenHash: input.listenerTokenHash } : {}),
       rev: 0,
       lastSeq: 0,
       lastActivity: t,
@@ -155,9 +163,9 @@ export class RoomCore {
     if (!this.charge(conn, 1)) return this.strike(conn, error('rate-limited', 'Slow down: too many messages.'));
     const parsed = parseClientFrame(raw);
     if (!parsed.ok) return this.strike(conn, error('bad-frame', parsed.error));
-    // A history page can be large, so it costs more than an ordinary frame.
-    if (parsed.value.t === 'history' && !this.charge(conn, LIMITS.historyCost - 1)) {
-      return this.strike(conn, error('rate-limited', 'Slow down: too many history requests.'));
+    // History pages can be large and rotation does crypto work, so both cost more than an ordinary frame.
+    if ((parsed.value.t === 'history' || parsed.value.t === 'rotate') && !this.charge(conn, LIMITS.historyCost - 1)) {
+      return this.strike(conn, error('rate-limited', parsed.value.t === 'history' ? 'Slow down: too many history requests.' : 'Slow down.'));
     }
     return this.handle(conn, parsed.value, others);
   }
@@ -185,6 +193,8 @@ export class RoomCore {
         return this.onHistory(conn, room, msg);
       case 'ping':
         return reply({ t: 'pong', ts: msg.ts, serverTime: this.now() });
+      case 'rotate':
+        return this.onRotate(conn, room, msg.target);
     }
   }
 
@@ -209,9 +219,13 @@ export class RoomCore {
   private async hello(conn: ConnState, msg: HelloMsg, others: Presence): Promise<Outcome> {
     if (conn.role !== null) return reply(error('invalid', 'Already joined.'));
     if (!this.room()) {
-      return { send: [{ to: 'self', msg: error('not-found', 'No room with that code. Check the code and try again.') }], close: { code: CLOSE.notFound, reason: 'room not found' } };
+      return {
+        send: [{ to: 'self', msg: error('not-found', 'No room with that code. Check the code and try again.') }],
+        close: { code: CLOSE.notFound, reason: 'room not found' },
+      };
     }
-    if (msg.role !== 'listener') {
+    const needsToken = msg.role !== 'listener' || this.room()?.meta.private === true;
+    if (needsToken) {
       const authorized = msg.token ? await this.checkToken(msg.role, msg.token) : false;
       if (!authorized) {
         return { send: [{ to: 'self', msg: error('unauthorized', 'This link is not valid for that role.') }], close: { code: CLOSE.unauthorized, reason: 'unauthorized' } };
@@ -358,6 +372,21 @@ export class RoomCore {
     return reply({ t: 'history', segments, hasMore: this.olderExist(segments) });
   }
 
+  private async onRotate(conn: ConnState, room: RoomRecord, target: LinkTarget): Promise<Outcome> {
+    if (conn.role !== 'speaker') return reply(error('forbidden', 'Only the speaker can replace links.'));
+    if (target === 'listener' && !room.meta.private) return reply(error('invalid', 'This room is not private.'));
+    const token = generateToken();
+    const hash = await hashToken(token);
+    // Re-read after the await, then persist the new hash before anyone learns the token.
+    const current = this.room();
+    if (!current) return reply(error('not-found', 'This room no longer exists.'));
+    this.save(target === 'corrector' ? { ...current, correctorTokenHash: hash } : { ...current, listenerTokenHash: hash });
+    return {
+      send: [{ to: 'self', msg: { t: 'rotated', target, token } }],
+      closeRoles: { roles: [target], code: CLOSE.unauthorized, reason: 'link replaced' },
+    };
+  }
+
   /* --------------------------------- helpers --------------------------------- */
 
   private snapshot(room: RoomRecord, since: number, role: Role): { mode: 'append' | 'replace'; segments: Segment[]; hasMore: boolean } {
@@ -375,11 +404,15 @@ export class RoomCore {
   }
 
   private async checkToken(role: Role, token: string): Promise<boolean> {
+    const hash = await hashToken(token);
+    // Read the room only after the await: a link replaced meanwhile must not admit its old secret.
+    // Nothing between here and hello granting the role awaits, so this check cannot go stale.
     const room = this.room();
     if (!room) return false;
-    const hash = await hashToken(token);
     if (timingSafeEqual(hash, room.speakerTokenHash)) return true; // the speaker can do everything
-    return role === 'corrector' && timingSafeEqual(hash, room.correctorTokenHash);
+    if (role === 'speaker') return false;
+    if (timingSafeEqual(hash, room.correctorTokenHash)) return true; // correctors may also listen
+    return role === 'listener' && room.listenerTokenHash !== undefined && timingSafeEqual(hash, room.listenerTokenHash);
   }
 
   /** Token bucket per connection. */
@@ -405,7 +438,11 @@ export class RoomCore {
   }
 
   private room(): RoomRecord | null {
-    if (!this.cached) this.cached = this.store.loadRoom();
+    if (!this.cached) {
+      const loaded = this.store.loadRoom();
+      // Records written before private rooms existed have no meta.private.
+      this.cached = loaded ? { ...loaded, meta: { ...loaded.meta, private: loaded.meta.private ?? loaded.listenerTokenHash !== undefined } } : null;
+    }
     return this.cached;
   }
 

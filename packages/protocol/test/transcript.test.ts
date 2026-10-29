@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chunkText, estimateDurationMs, exportTranscript, formatTimestamp, segmentTimes, toCues, toJson, toPlainText, toSrt, toVtt, wrapLines } from '../src/transcript';
 import type { RoomMeta, Segment } from '../src/messages';
 
-const meta: RoomMeta = { title: 'Lecture 1', lang: 'en-IN', allowExport: true, createdAt: Date.UTC(2026, 0, 1) };
+const meta: RoomMeta = { title: 'Lecture 1', lang: 'en-IN', allowExport: true, createdAt: Date.UTC(2026, 0, 1), private: false };
 const timed = (seq: number, text: string, startMs: number, endMs: number): Segment => ({ seq, id: `s${seq}`, text, ts: 1_000_000 + endMs, rev: seq, startMs, endMs });
 
 describe('timestamps', () => {

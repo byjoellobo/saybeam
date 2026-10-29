@@ -24,7 +24,12 @@ interface GpuAdapterLike {
 }
 
 export async function detectCapabilities(): Promise<Capabilities> {
-  const nav = navigator as Navigator & { gpu?: { requestAdapter(): Promise<GpuAdapterLike | null> }; deviceMemory?: number; standalone?: boolean; userAgentData?: { mobile?: boolean } };
+  const nav = navigator as Navigator & {
+    gpu?: { requestAdapter(): Promise<GpuAdapterLike | null> };
+    deviceMemory?: number;
+    standalone?: boolean;
+    userAgentData?: { mobile?: boolean };
+  };
   let webgpu = false;
   let gpuName: string | null = null;
   if (nav.gpu) {
@@ -76,25 +81,49 @@ export function recommendEngine(caps: Capabilities, lang: string): Recommendatio
 
   if (!english) {
     if (caps.webgpu && !weakDevice) {
-      return { config: { kind: 'local', modelId: 'whisper-base', device: 'webgpu', language: whisperLanguage(lang), partials: true }, reason: 'Moonshine is English-only, so this uses multilingual Whisper on your GPU. Audio stays on this device.' };
+      return {
+        config: { kind: 'local', modelId: 'whisper-base', device: 'webgpu', language: whisperLanguage(lang), partials: true },
+        reason: 'Moonshine is English-only, so this uses multilingual Whisper on your GPU. Audio stays on this device.',
+      };
     }
     if (caps.webSpeech) {
-      return { config: { kind: 'webspeech', lang, onDevice: false, phrases: [] }, reason: 'Your browser\'s speech service handles this language well on modest hardware. It needs internet and sends audio to the browser vendor.' };
+      return {
+        config: { kind: 'webspeech', lang, onDevice: false, phrases: [] },
+        reason: "Your browser's speech service handles this language well on modest hardware. It needs internet and sends audio to the browser vendor.",
+      };
     }
-    return { config: { kind: 'local', modelId: 'whisper-base', device: 'auto', language: whisperLanguage(lang), partials: false }, reason: 'Multilingual Whisper on this device. It may be slow here, so live partial captions are off.' };
+    return {
+      config: { kind: 'local', modelId: 'whisper-base', device: 'auto', language: whisperLanguage(lang), partials: false },
+      reason: 'Multilingual Whisper on this device. It may be slow here, so live partial captions are off.',
+    };
   }
 
   if (caps.iosStandalone && !caps.webgpu) {
-    return { config: { kind: 'local', modelId: 'moonshine-tiny', device: 'wasm', language: null, partials: false }, reason: 'iPhone home-screen apps cannot use Safari speech recognition, so this uses a small on-device model.' };
+    return {
+      config: { kind: 'local', modelId: 'moonshine-tiny', device: 'wasm', language: null, partials: false },
+      reason: 'iPhone home-screen apps cannot use Safari speech recognition, so this uses a small on-device model.',
+    };
   }
   if (caps.webgpu && !weakDevice) {
-    return { config: { kind: 'local', modelId: 'moonshine-base', device: 'webgpu', language: null, partials: true }, reason: 'Your GPU can run Moonshine Base quickly. Audio never leaves this device, and it works offline once downloaded.' };
+    return {
+      config: { kind: 'local', modelId: 'moonshine-base', device: 'webgpu', language: null, partials: true },
+      reason: 'Your GPU can run Moonshine Base quickly. Audio never leaves this device, and it works offline once downloaded.',
+    };
   }
   if (!weakDevice) {
-    return { config: { kind: 'local', modelId: 'moonshine-tiny', device: 'wasm', language: null, partials: true }, reason: 'Moonshine Tiny runs well on this CPU. Audio never leaves this device.' };
+    return {
+      config: { kind: 'local', modelId: 'moonshine-tiny', device: 'wasm', language: null, partials: true },
+      reason: 'Moonshine Tiny runs well on this CPU. Audio never leaves this device.',
+    };
   }
   if (caps.webSpeech) {
-    return { config: { kind: 'webspeech', lang, onDevice: false, phrases: [] }, reason: 'This device is light on CPU or memory, so the browser\'s speech service is the most responsive choice. It needs internet.' };
+    return {
+      config: { kind: 'webspeech', lang, onDevice: false, phrases: [] },
+      reason: "This device is light on CPU or memory, so the browser's speech service is the most responsive choice. It needs internet.",
+    };
   }
-  return { config: { kind: 'local', modelId: 'moonshine-tiny', device: 'wasm', language: null, partials: false }, reason: 'Moonshine Tiny with live partials off, to keep up on this device.' };
+  return {
+    config: { kind: 'local', modelId: 'moonshine-tiny', device: 'wasm', language: null, partials: false },
+    reason: 'Moonshine Tiny with live partials off, to keep up on this device.',
+  };
 }

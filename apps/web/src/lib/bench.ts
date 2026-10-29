@@ -101,7 +101,29 @@ export function percentile(values: readonly number[], p: number): number | null 
   return sorted[idx] ?? null;
 }
 
-const CSV_COLUMNS: ReadonlyArray<keyof BenchResult> = ['at', 'deviceLabel', 'speakerLabel', 'engine', 'backend', 'mode', 'passage', 'audioSec', 'asrSec', 'rtf', 'p50Ms', 'p95Ms', 'loadMs', 'wer', 'cer', 'refWords', 'cores', 'memoryGb', 'gpu', 'userAgent', 'hypothesis'];
+const CSV_COLUMNS: ReadonlyArray<keyof BenchResult> = [
+  'at',
+  'deviceLabel',
+  'speakerLabel',
+  'engine',
+  'backend',
+  'mode',
+  'passage',
+  'audioSec',
+  'asrSec',
+  'rtf',
+  'p50Ms',
+  'p95Ms',
+  'loadMs',
+  'wer',
+  'cer',
+  'refWords',
+  'cores',
+  'memoryGb',
+  'gpu',
+  'userAgent',
+  'hypothesis',
+];
 
 export function toCsv(results: readonly BenchResult[]): string {
   const cell = (v: unknown): string => {
@@ -110,5 +132,5 @@ export function toCsv(results: readonly BenchResult[]): string {
     if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  return [CSV_COLUMNS.join(','), ...results.map((r) => CSV_COLUMNS.map((c) => cell(r[c])).join(','))].join('\n') + '\n';
+  return [CSV_COLUMNS.join(','), ...results.map((r) => CSV_COLUMNS.map((c) => cell(r[c])).join(','))].join('\n').concat('\n');
 }

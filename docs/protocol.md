@@ -9,17 +9,32 @@ The web app always talks to its own origin (`location.origin`), so it does not c
 
 ## HTTP API
 
-| Method and path | Body | Response |
-| --- | --- | --- |
-| `GET /api/info` | | `200 ServerInfo` |
-| `POST /api/rooms` | `CreateRoomRequest` (JSON, may be `{}`), sent with `content-type: application/json` | `201 CreateRoomResponse`, `400 {error}`, `413 {error}`, `415 {error}`, `429 {error}` |
-| `GET /api/rooms/:code` | | `200 {code, status, title}` or `404 {error}` |
-| `GET /ws/:code` | WebSocket upgrade | `101`, `404` if the room does not exist, `426` if not an upgrade |
+| Method and path        | Body                                                                                | Response                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `GET /api/info`        |                                                                                     | `200 ServerInfo`                                                                           |
+| `POST /api/rooms`      | `CreateRoomRequest` (JSON, may be `{}`), sent with `content-type: application/json` | `201 CreateRoomResponse`, `400 {error}`, `413 {error}`, `415 {error}`, `429 {error}`       |
+| `GET /api/rooms/:code` |                                                                                     | `200 {code, status, title, private}` or `404 {error}`. For a private room `title` is `""`. |
+| `GET /ws/:code`        | WebSocket upgrade                                                                   | `101`, `404` if the room does not exist, `426` if not an upgrade                           |
 
 ```ts
-interface ServerInfo { mode: 'cloud' | 'lan'; version: string; publicBase: string | null; localModels: boolean }
-interface CreateRoomRequest { title?: string /* <=120 */; lang?: string /* BCP-47 */; allowExport?: boolean }
-interface CreateRoomResponse { code: string; speakerToken: string; correctorToken: string }
+interface ServerInfo {
+  mode: 'cloud' | 'lan';
+  version: string;
+  publicBase: string | null;
+  localModels: boolean;
+}
+interface CreateRoomRequest {
+  title?: string /* <=120 */;
+  lang?: string /* BCP-47 */;
+  allowExport?: boolean;
+  private?: boolean;
+}
+interface CreateRoomResponse {
+  code: string;
+  speakerToken: string;
+  correctorToken: string;
+  listenerToken?: string /* only for private rooms */;
+}
 ```
 
 - `publicBase`: the URL listeners should open (used for QR codes). On LAN this is `http://<laptop-lan-ip>:<port>`. `null` in the cloud (the client uses `location.origin`).
@@ -41,9 +56,28 @@ Text frames only. Each frame is one JSON object with a `t` field. Max inbound fr
 ```ts
 type Role = 'speaker' | 'listener' | 'corrector';
 type RoomStatus = 'live' | 'paused' | 'ended';
-interface Segment { seq: number; id: string; text: string; ts: number; rev: number; startMs?: number; endMs?: number; edited?: boolean }
-interface RoomMeta { title: string; lang: string; allowExport: boolean; createdAt: number }
-interface Presence { listeners: number; correctors: number; speaker: boolean }
+interface Segment {
+  seq: number;
+  id: string;
+  text: string;
+  ts: number;
+  rev: number;
+  startMs?: number;
+  endMs?: number;
+  edited?: boolean;
+}
+interface RoomMeta {
+  title: string;
+  lang: string;
+  allowExport: boolean;
+  createdAt: number;
+  private: boolean;
+}
+interface Presence {
+  listeners: number;
+  correctors: number;
+  speaker: boolean;
+}
 ```
 
 - `seq`: assigned by the server, starts at 1, strictly increasing.
@@ -53,32 +87,34 @@ interface Presence { listeners: number; correctors: number; speaker: boolean }
 
 ### Client to server
 
-| `t` | Fields | Who | Effect |
-| --- | --- | --- | --- |
-| `hello` | `role`, `token?`, `since?`, `v?` | anyone, must be first | Join. Speaker needs the speaker token. Corrector needs the corrector token **or** the speaker token. `since` is the last `rev` the client applied. |
-| `partial` | `id`, `text` (<=2000) | speaker | In-progress caption. Not stored. Broadcast to everyone except the sender. Empty `text` clears it. |
-| `final` | `id`, `text` (<=2000, non-empty after trim), `startMs?`, `endMs?` | speaker | Stored and broadcast to **all** (including the sender). Idempotent by `id`. |
-| `correct` | `seq`, `text` | speaker, corrector | Replace a stored segment's text. Empty text removes it. Broadcast to all. Allowed after `ended`. |
-| `meta` | `title?`, `lang?`, `allowExport?` | speaker | Merge into room meta, broadcast `meta` to all. |
-| `status` | `status: 'live' \| 'paused'` | speaker | Broadcast `status`. Pausing clears the partial. |
-| `history` | `before` (seq), `limit?` (<=500, default 200) | anyone joined | Reply with older segments. |
-| `end` | | speaker | Status becomes `ended`, broadcast `status`. Further `partial`/`final`/`status` get `error room-ended`. |
-| `ping` | `ts` | anyone joined | Reply `pong {ts, serverTime}`. |
+| `t`       | Fields                                                            | Who                   | Effect                                                                                                                                                                                                                                  |
+| --------- | ----------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hello`   | `role`, `token?`, `since?`, `v?`                                  | anyone, must be first | Join. Speaker needs the speaker token. Corrector needs the corrector token **or** the speaker token. In a **private** room a listener needs the listener, corrector **or** speaker token. `since` is the last `rev` the client applied. |
+| `partial` | `id`, `text` (<=2000)                                             | speaker               | In-progress caption. Not stored. Broadcast to everyone except the sender. Empty `text` clears it.                                                                                                                                       |
+| `final`   | `id`, `text` (<=2000, non-empty after trim), `startMs?`, `endMs?` | speaker               | Stored and broadcast to **all** (including the sender). Idempotent by `id`.                                                                                                                                                             |
+| `correct` | `seq`, `text`                                                     | speaker, corrector    | Replace a stored segment's text. Empty text removes it. Broadcast to all. Allowed after `ended`.                                                                                                                                        |
+| `meta`    | `title?`, `lang?`, `allowExport?`                                 | speaker               | Merge into room meta, broadcast `meta` to all.                                                                                                                                                                                          |
+| `status`  | `status: 'live' \| 'paused'`                                      | speaker               | Broadcast `status`. Pausing clears the partial.                                                                                                                                                                                         |
+| `history` | `before` (seq), `limit?` (<=500, default 200)                     | anyone joined         | Reply with older segments.                                                                                                                                                                                                              |
+| `end`     |                                                                   | speaker               | Status becomes `ended`, broadcast `status`. Further `partial`/`final`/`status` get `error room-ended`.                                                                                                                                  |
+| `ping`    | `ts`                                                              | anyone joined         | Reply `pong {ts, serverTime}`.                                                                                                                                                                                                          |
+| `rotate`  | `target: 'corrector' \| 'listener'`                               | speaker               | Replace that link's secret. See "Private rooms and link rotation".                                                                                                                                                                      |
 
 ### Server to client
 
-| `t` | Fields | Sent when |
-| --- | --- | --- |
-| `welcome` | `v`, `room`, `role`, `meta`, `status`, `mode`, `segments`, `partial`, `hasMore`, `rev`, `presence`, `serverTime` | reply to a valid `hello` |
-| `partial` | `id`, `text` | speaker partial (empty `text` = clear) |
-| `final` | `seg` | new final (to all), or the stored copy (to the sender only) for a duplicate `id` |
-| `correct` | `seq`, `text`, `rev`, `by` | a correction |
-| `meta` | `meta` | meta changed |
-| `status` | `status` | status changed |
-| `history` | `segments`, `hasMore` | reply to `history` |
-| `presence` | `presence` | after joins and leaves, debounced to at most one per ~1.5 s |
-| `error` | `code`, `message` | see codes below |
-| `pong` | `ts`, `serverTime` | reply to JSON `ping` |
+| `t`        | Fields                                                                                                           | Sent when                                                                        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `welcome`  | `v`, `room`, `role`, `meta`, `status`, `mode`, `segments`, `partial`, `hasMore`, `rev`, `presence`, `serverTime` | reply to a valid `hello`                                                         |
+| `partial`  | `id`, `text`                                                                                                     | speaker partial (empty `text` = clear)                                           |
+| `final`    | `seg`                                                                                                            | new final (to all), or the stored copy (to the sender only) for a duplicate `id` |
+| `correct`  | `seq`, `text`, `rev`, `by`                                                                                       | a correction                                                                     |
+| `meta`     | `meta`                                                                                                           | meta changed                                                                     |
+| `status`   | `status`                                                                                                         | status changed                                                                   |
+| `history`  | `segments`, `hasMore`                                                                                            | reply to `history`                                                               |
+| `presence` | `presence`                                                                                                       | after joins and leaves, debounced to at most one per ~1.5 s                      |
+| `error`    | `code`, `message`                                                                                                | see codes below                                                                  |
+| `pong`     | `ts`, `serverTime`                                                                                               | reply to JSON `ping`                                                             |
+| `rotated`  | `target`, `token`                                                                                                | reply to `rotate`, to the speaker only                                           |
 
 ### Welcome and resume
 
@@ -108,15 +144,27 @@ On `hello`, the server builds the snapshot:
 - Error codes: `bad-frame`, `hello-required`, `unauthorized`, `forbidden`, `not-found`, `room-ended`, `room-full`, `invalid`, `rate-limited`.
 - Cloud rooms expire 24 hours after the last final, correction, or end, and never live longer than 72 hours. A Durable Object for a code that was never created writes nothing. A room accepts at most 5,000 sockets (`503` after that). The LAN relay keeps rooms in memory until it exits.
 
+### Private rooms and link rotation
+
+- `POST /api/rooms` with `private: true` also returns a `listenerToken`. The server stores only its SHA-256 hex digest (`listenerTokenHash` in the room record) and sets `meta.private = true`.
+- The listener link becomes `/r/CODE#k=<listenerToken>` (the QR code carries it). The fragment never reaches servers.
+- In a private room, a listener `hello` without a valid token gets `error unauthorized` and close **4003**. Listener, corrector and speaker tokens are all accepted.
+- `GET /api/rooms/:code` reports `private: true` and an empty `title` for private rooms, so the code alone reveals nothing but existence.
+- `rotate` (speaker only):
+  - `target: 'corrector'`: generate a new corrector token, store its hash, reply `rotated {target, token}` to the speaker, then close every **corrector** connection except the sender with **4003** "link replaced".
+  - `target: 'listener'`: only for private rooms (otherwise `error invalid` "This room is not private."). Generate a new listener token, store its hash, reply `rotated`, then close every **listener** connection with **4003** "link replaced". Listeners need the new QR or link.
+  - Rotation is allowed after the session has ended.
+- A `rotate` frame costs 10 rate-limit tokens, like `history`.
+
 ### Close codes
 
-| Code | Meaning |
-| --- | --- |
-| 4001 | Replaced by a newer speaker connection |
-| 4003 | Unauthorized |
-| 4004 | Room not found |
+| Code | Meaning                                      |
+| ---- | -------------------------------------------- |
+| 4001 | Replaced by a newer speaker connection       |
+| 4003 | Unauthorized, or the link was replaced       |
+| 4004 | Room not found                               |
 | 4400 | Oversized frame, or too many rejected frames |
-| 4410 | Room expired |
+| 4410 | Room expired                                 |
 
 ## Example session
 

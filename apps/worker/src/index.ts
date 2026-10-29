@@ -114,18 +114,21 @@ async function createRoom(request: Request, env: Env): Promise<Response> {
   const parsed = parseCreateRoom(body);
   if (!parsed.ok) return json({ error: parsed.error }, 400);
 
+  const { private: isPrivate, ...options } = parsed.value;
   for (let attempt = 0; attempt < CREATE_ATTEMPTS; attempt++) {
     const code = generateRoomCode();
     const speakerToken = generateToken();
     const correctorToken = generateToken();
+    const listenerToken = isPrivate ? generateToken() : undefined;
     const created = await env.ROOMS.getByName(code).init({
       code,
       speakerTokenHash: await hashToken(speakerToken),
       correctorTokenHash: await hashToken(correctorToken),
-      ...parsed.value,
+      ...(listenerToken ? { listenerTokenHash: await hashToken(listenerToken) } : {}),
+      ...options,
     });
     if (created) {
-      const res: CreateRoomResponse = { code, speakerToken, correctorToken };
+      const res: CreateRoomResponse = { code, speakerToken, correctorToken, ...(listenerToken ? { listenerToken } : {}) };
       return json(res, 201);
     }
   }

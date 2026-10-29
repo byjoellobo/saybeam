@@ -93,8 +93,9 @@
   font-weight: var(--cap-weight);
   letter-spacing: var(--cap-tracking);
   text-transform: var(--cap-transform);
+  /* No automatic hyphenation: split words slow readers down. Only very long words wrap mid-word. */
   overflow-wrap: anywhere;
-  hyphens: auto;
+  hyphens: manual;
 }
 .captions:focus-visible {
   box-shadow: inset 0 0 0 3px var(--accent);

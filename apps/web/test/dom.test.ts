@@ -4,7 +4,18 @@ import { h, render } from 'preact';
 import { act } from 'preact/test-utils';
 import { ApiError, createRoom, describeRoom, fetchInfo, publicBase } from '../src/lib/api';
 import { copyText, downloadText, qrSvg, safeFilename, useReconnectNudges, useWakeLock } from '../src/lib/browser';
-import { forgetRoom, getSavedRoom, listSavedRooms, loadListenerPrefs, loadSpeakerPrefs, saveListenerPrefs, saveRoom, saveSpeakerPrefs, DEFAULT_LISTENER_PREFS, DEFAULT_SPEAKER_PREFS } from '../src/lib/storage';
+import {
+  forgetRoom,
+  getSavedRoom,
+  listSavedRooms,
+  loadListenerPrefs,
+  loadSpeakerPrefs,
+  saveListenerPrefs,
+  saveRoom,
+  saveSpeakerPrefs,
+  DEFAULT_LISTENER_PREFS,
+  DEFAULT_SPEAKER_PREFS,
+} from '../src/lib/storage';
 import { loadResults, storeResults, type BenchResult } from '../src/lib/bench';
 import { navigate, useRoute, type Route } from '../src/lib/router';
 import { useRoom } from '../src/lib/use-room';
@@ -32,12 +43,18 @@ describe('api', () => {
   });
 
   it('reports network failures in plain words', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('offline'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Promise.reject(new TypeError('offline'))),
+    );
     await expect(describeRoom('ABCDEF')).rejects.toMatchObject({ status: 0, message: expect.stringMatching(/Could not reach/) });
   });
 
   it('falls back to cloud info when /api/info fails, and builds public links', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('offline'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Promise.reject(new TypeError('offline'))),
+    );
     const info = await fetchInfo();
     expect(info.mode).toBe('cloud');
     expect(publicBase({ mode: 'lan', version: '1', publicBase: 'http://10.0.0.5:7300/', localModels: true })).toBe('http://10.0.0.5:7300');
@@ -217,7 +234,21 @@ describe('useRoom and loadAll', () => {
     client.connect();
     const s = socket as unknown as { onopen: (e: unknown) => void; deliver: (m: unknown) => void };
     s.onopen({});
-    s.deliver({ t: 'welcome', v: 1, room: 'ABCDEF', role: 'speaker', meta: { title: '', lang: 'en', allowExport: true, createdAt: 0 }, status: 'live', mode: 'replace', segments: [{ seq: 4, id: 'i4', text: 'x', ts: 0, rev: 1 }], partial: null, hasMore: true, rev: 1, presence: { listeners: 0, correctors: 0, speaker: true }, serverTime: 0 });
+    s.deliver({
+      t: 'welcome',
+      v: 1,
+      room: 'ABCDEF',
+      role: 'speaker',
+      meta: { title: '', lang: 'en', allowExport: true, createdAt: 0 },
+      status: 'live',
+      mode: 'replace',
+      segments: [{ seq: 4, id: 'i4', text: 'x', ts: 0, rev: 1 }],
+      partial: null,
+      hasMore: true,
+      rev: 1,
+      presence: { listeners: 0, correctors: 0, speaker: true },
+      serverTime: 0,
+    });
     await client.loadAll();
     expect(client.snapshot.view.segments.map((x) => x.seq)).toEqual([1, 2, 3, 4]);
     expect(client.snapshot.view.hasMore).toBe(false);

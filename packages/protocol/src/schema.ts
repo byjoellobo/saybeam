@@ -5,11 +5,23 @@
 import { z } from 'zod';
 import { LIMITS, type ClientMsg, type CreateRoomRequest } from './messages';
 
-const id = z.string().min(1).max(LIMITS.maxIdChars).regex(/^[A-Za-z0-9_.:-]+$/);
+const id = z
+  .string()
+  .min(1)
+  .max(LIMITS.maxIdChars)
+  .regex(/^[A-Za-z0-9_.:-]+$/);
 const text = z.string().max(LIMITS.maxTextChars);
-const ms = z.number().int().min(0).max(1000 * 60 * 60 * 72);
+const ms = z
+  .number()
+  .int()
+  .min(0)
+  .max(1000 * 60 * 60 * 72);
 const role = z.enum(['speaker', 'listener', 'corrector']);
-const lang = z.string().min(2).max(LIMITS.maxLangChars).regex(/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/);
+const lang = z
+  .string()
+  .min(2)
+  .max(LIMITS.maxLangChars)
+  .regex(/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/);
 const title = z.string().max(LIMITS.maxTitleChars);
 
 export const clientMsgSchema = z.discriminatedUnion('t', [
@@ -28,12 +40,14 @@ export const clientMsgSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('history'), before: z.number().int().min(1), limit: z.number().int().min(1).max(LIMITS.historyPage).optional() }),
   z.object({ t: z.literal('end') }),
   z.object({ t: z.literal('ping'), ts: z.number() }),
+  z.object({ t: z.literal('rotate'), target: z.enum(['corrector', 'listener']) }),
 ]);
 
 export const createRoomSchema = z.object({
   title: title.optional(),
   lang: lang.optional(),
   allowExport: z.boolean().optional(),
+  private: z.boolean().optional(),
 });
 
 export type ParseResult<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: string };

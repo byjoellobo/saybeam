@@ -21,10 +21,13 @@ const MIN_CUE_MS = 1000;
 
 const visible = (segments: readonly Segment[]): Segment[] => segments.filter((s) => s.text.trim().length > 0);
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: removing control characters is the point
+const CUE_CONTROL_RUN = /[\u0000-\u001f\u007f]+/g;
+
 /** Text safe inside a subtitle cue: one line of plain text that cannot start a new cue. */
 export function cueSafe(text: string): string {
   return text
-    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(CUE_CONTROL_RUN, ' ')
     .replace(/-->/g, '->')
     .replace(/\s{2,}/g, ' ')
     .trim();

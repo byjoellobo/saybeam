@@ -9,13 +9,13 @@ This plan gives each risk a method, the tools already built into Caption Room, p
 
 ## Tools in this repo
 
-| Tool | What it measures |
-| --- | --- |
-| `/bench`, "Transcribe an audio file" | Real-time factor (RTF: compute time divided by audio length), per-utterance p50/p95 compute time, model load time, word and character error rate against a reference. On-device engines only. |
-| `/bench`, "Record and read aloud" | Word error rate for any engine, including browser speech and WhisperLive, read live from the mic. |
-| Speaker console, "Performance" panel | Live RTF, caption lag (end of speech to final caption), queue depth, partial-update interval, server round trip, unsent captions. |
-| `scripts/demo-speaker.mjs --listeners N` | Fan-out latency from the speaker's send to N listeners' receive, for big halls. |
-| `scripts/conformance.mjs` | Protocol correctness of the cloud server and the LAN relay. |
+| Tool                                     | What it measures                                                                                                                                                                              |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/bench`, "Transcribe an audio file"     | Real-time factor (RTF: compute time divided by audio length), per-utterance p50/p95 compute time, model load time, word and character error rate against a reference. On-device engines only. |
+| `/bench`, "Record and read aloud"        | Word error rate for any engine, including browser speech and WhisperLive, read live from the mic.                                                                                             |
+| Speaker console, "Performance" panel     | Live RTF, caption lag (end of speech to final caption), queue depth, partial-update interval, server round trip, unsent captions.                                                             |
+| `scripts/demo-speaker.mjs --listeners N` | Fan-out latency from the speaker's send to N listeners' receive, for big halls.                                                                                                               |
+| `scripts/conformance.mjs`                | Protocol correctness of the cloud server and the LAN relay.                                                                                                                                   |
 
 Scoring details (in `apps/web/src/lib/wer.ts`):
 
@@ -29,12 +29,12 @@ Scoring details (in `apps/web/src/lib/wer.ts`):
 
 Borrow at least one device per tier. Record the exact model, RAM, browser version and power state (plugged in or on battery).
 
-| Tier | Example | Why |
-| --- | --- | --- |
-| A, low-end phone | Android with 2 to 3 GB RAM, 4 to 8 slow cores, Chrome | The worst device a teacher might use |
-| B, entry laptop | Celeron or Core i3, 4 GB RAM, integrated GPU, Windows, Chrome | A typical school or government-scheme laptop |
-| C, Chromebook | 4 GB, ARM or Celeron | Common in schools |
-| D, mid laptop | Core i5 or Ryzen 5, 8 GB, with WebGPU | A comfortable reference point |
+| Tier             | Example                                                       | Why                                          |
+| ---------------- | ------------------------------------------------------------- | -------------------------------------------- |
+| A, low-end phone | Android with 2 to 3 GB RAM, 4 to 8 slow cores, Chrome         | The worst device a teacher might use         |
+| B, entry laptop  | Celeron or Core i3, 4 GB RAM, integrated GPU, Windows, Chrome | A typical school or government-scheme laptop |
+| C, Chromebook    | 4 GB, ARM or Celeron                                          | Common in schools                            |
+| D, mid laptop    | Core i5 or Ryzen 5, 8 GB, with WebGPU                         | A comfortable reference point                |
 
 ### Engine matrix
 
@@ -57,14 +57,14 @@ For each device run:
 
 ### Thresholds
 
-| Metric | Pass | Investigate | Fail |
-| --- | --- | --- | --- |
-| RTF, sustained | under 0.5 | 0.5 to 0.8 | over 0.8 (captions fall behind) |
-| Caption lag p95 | under 2.5 s | 2.5 to 4 s | over 4 s |
-| Warm model load | under 10 s | 10 to 30 s | over 30 s |
-| Cold model load on 10 Mbps | under 90 s | 90 to 180 s | over 180 s |
-| 30-minute run | no crash, RTF at minute 30 within 25% of minute 1 | | crash, or RTF more than doubles |
-| Fan-out p95, 200 listeners (cloud) | under 500 ms | 500 ms to 1 s | over 1 s |
+| Metric                             | Pass                                              | Investigate   | Fail                            |
+| ---------------------------------- | ------------------------------------------------- | ------------- | ------------------------------- |
+| RTF, sustained                     | under 0.5                                         | 0.5 to 0.8    | over 0.8 (captions fall behind) |
+| Caption lag p95                    | under 2.5 s                                       | 2.5 to 4 s    | over 4 s                        |
+| Warm model load                    | under 10 s                                        | 10 to 30 s    | over 30 s                       |
+| Cold model load on 10 Mbps         | under 90 s                                        | 90 to 180 s   | over 180 s                      |
+| 30-minute run                      | no crash, RTF at minute 30 within 25% of minute 1 |               | crash, or RTF more than doubles |
+| Fan-out p95, 200 listeners (cloud) | under 500 ms                                      | 500 ms to 1 s | over 1 s                        |
 
 The engine adapts already. Partial captions slow down when transcription is slow, and switch off when RTF goes above 0.6. The test question is whether **finals** keep up.
 
@@ -111,11 +111,11 @@ The engine adapts already. Partial captions slow down when transcription is slow
 
 ### Thresholds (indicative, to revise after the first data)
 
-| Speech | Good | Usable | Not fit |
-| --- | --- | --- | --- |
-| Read Indian English | WER under 10% | 10 to 20% | over 20% |
-| Spontaneous Indian English | under 15% | 15 to 25% | over 25% |
-| Code-mixed (with equivalences) | under 20% | 20 to 35% | over 35% |
+| Speech                         | Good          | Usable    | Not fit  |
+| ------------------------------ | ------------- | --------- | -------- |
+| Read Indian English            | WER under 10% | 10 to 20% | over 20% |
+| Spontaneous Indian English     | under 15%     | 15 to 25% | over 25% |
+| Code-mixed (with equivalences) | under 20%     | 20 to 35% | over 35% |
 
 ### Known limitations going in
 
@@ -132,15 +132,15 @@ The engine adapts already. Partial captions slow down when transcription is slow
 
 ## Schedule (10 working days)
 
-| Day | Work |
-| --- | --- |
-| 1 | Deploy the Worker. Collect devices. Record the 5-minute reference lecture. Dry-run the bench on Tier D. |
-| 2 to 3 | Risk 1, method steps 1 and 2 (load and throughput) on all tiers. |
-| 4 | Risk 1, step 3 (30-minute sustained runs) on Tiers A and B, plus battery. Fan-out tests. |
-| 3 to 5 | In parallel: recruit speakers and run the Svarah and MUCS baselines in file mode on Tier D. |
-| 6 to 8 | Speaker recording sessions, then file-mode and live scoring. |
-| 9 | Analysis: WER by region and engine, latency tables. Pick defaults per device tier and language. |
-| 10 | Write up. Update `recommendEngine` and the model presets. List the follow-ups (fine-tuned models, vocabulary packs for schools). |
+| Day    | Work                                                                                                                             |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1      | Deploy the Worker. Collect devices. Record the 5-minute reference lecture. Dry-run the bench on Tier D.                          |
+| 2 to 3 | Risk 1, method steps 1 and 2 (load and throughput) on all tiers.                                                                 |
+| 4      | Risk 1, step 3 (30-minute sustained runs) on Tiers A and B, plus battery. Fan-out tests.                                         |
+| 3 to 5 | In parallel: recruit speakers and run the Svarah and MUCS baselines in file mode on Tier D.                                      |
+| 6 to 8 | Speaker recording sessions, then file-mode and live scoring.                                                                     |
+| 9      | Analysis: WER by region and engine, latency tables. Pick defaults per device tier and language.                                  |
+| 10     | Write up. Update `recommendEngine` and the model presets. List the follow-ups (fine-tuned models, vocabulary packs for schools). |
 
 ## What to hand back
 

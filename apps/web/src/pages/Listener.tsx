@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'preact/hooks';
-import { exportTranscript, formatRoomCode, type ExportFormat } from '@caption-room/protocol';
+import { useCallback, useEffect, useState } from 'preact/hooks';
+import { CLOSE, exportTranscript, formatRoomCode, type ExportFormat } from '@caption-room/protocol';
 import { CaptionView } from '../components/CaptionView';
 import { DisplaySettings } from '../components/DisplaySettings';
 import { StatusPill } from '../components/StatusPill';
@@ -19,8 +19,48 @@ const FONT_STACKS: Record<ListenerPrefs['font'], string> = {
   mono: 'ui-monospace, "Cascadia Mono", Menlo, monospace',
 };
 
+/**
+ * A private room's listener secret arrives in the link fragment (#k=...), which
+ * is never sent to servers. Keep it on this device and tidy the address bar.
+ */
+function useListenerToken(code: string): string | undefined {
+  const read = useCallback((): string | undefined => {
+    const key = `caption-room:listen:${code}`;
+    const k = new URLSearchParams(location.hash.slice(1)).get('k');
+    try {
+      if (k && k.length >= 16) {
+        localStorage.setItem(key, k);
+        history.replaceState(null, '', location.pathname);
+      }
+      return localStorage.getItem(key) ?? undefined;
+    } catch {
+      // Storage blocked (private mode): keep the secret for this page only.
+      return k && k.length >= 16 ? k : undefined;
+    }
+  }, [code]);
+  const [token, setToken] = useState(read);
+  // Pasting the full link into the address bar on this same page only changes the fragment.
+  useEffect(() => {
+    const onHash = () => setToken(read());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, [read]);
+  return token;
+}
+
 export function Listener({ code }: ListenerProps) {
-  const { client, snap } = useRoom({ code, role: 'listener', maxSegments: 3000 });
+  const token = useListenerToken(code);
+  const { client, snap } = useRoom({ code, role: 'listener', token, maxSegments: 3000 });
+
+  // A refused secret (the link was replaced) is useless: forget it so this device stops retrying it.
+  useEffect(() => {
+    if (snap.closeCode !== CLOSE.unauthorized) return;
+    try {
+      localStorage.removeItem(`caption-room:listen:${code}`);
+    } catch {
+      // ignore
+    }
+  }, [snap.closeCode, code]);
   const [prefs, setPrefs] = useState<ListenerPrefs>(loadListenerPrefs);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { view } = snap;

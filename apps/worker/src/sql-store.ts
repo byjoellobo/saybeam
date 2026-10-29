@@ -113,19 +113,11 @@ export class SqlRoomStore implements RoomStore {
   }
 
   latest(limit: number): Segment[] {
-    return this.sql
-      .exec<SegmentRow>(`SELECT ${COLUMNS} FROM segments ORDER BY seq DESC LIMIT ?`, limit)
-      .toArray()
-      .map(toSegment)
-      .reverse();
+    return this.sql.exec<SegmentRow>(`SELECT ${COLUMNS} FROM segments ORDER BY seq DESC LIMIT ?`, limit).toArray().map(toSegment).reverse();
   }
 
   before(before: number, limit: number): Segment[] {
-    return this.sql
-      .exec<SegmentRow>(`SELECT ${COLUMNS} FROM segments WHERE seq < ? ORDER BY seq DESC LIMIT ?`, before, limit)
-      .toArray()
-      .map(toSegment)
-      .reverse();
+    return this.sql.exec<SegmentRow>(`SELECT ${COLUMNS} FROM segments WHERE seq < ? ORDER BY seq DESC LIMIT ?`, before, limit).toArray().map(toSegment).reverse();
   }
 
   firstSeq(): number | null {

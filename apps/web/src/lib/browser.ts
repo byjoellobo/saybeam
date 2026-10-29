@@ -67,5 +67,11 @@ export function useReconnectNudges(nudge: () => void): void {
 }
 
 export function safeFilename(s: string): string {
-  return s.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'captions';
+  return (
+    s
+      .replace(/[^\w\- ]+/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 60) || 'captions'
+  );
 }

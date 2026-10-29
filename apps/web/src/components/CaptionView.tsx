@@ -42,7 +42,7 @@ function toParagraphs(segments: readonly Segment[]): Paragraph[] {
  * "jump to live" button with a count of new lines.
  */
 export function CaptionView({ segments, partial, prefs, hasMore, onLoadEarlier, clockOffset }: CaptionViewProps) {
-  const scroller = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLElement>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [unseen, setUnseen] = useState(0);
   const [windowSize, setWindowSize] = useState(RENDER_WINDOW);
@@ -55,10 +55,16 @@ export function CaptionView({ segments, partial, prefs, hasMore, onLoadEarlier, 
   const showPartial = prefs.showPartial && partial?.text;
   const newestFinal = segments[segments.length - 1];
 
+  /** Last scroll position we set or saw: layout growth never moves the view up, only the reader does. */
+  const lastTop = useRef(0);
+
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    if (atBottom || prefs.layout === 'stage') el.scrollTop = el.scrollHeight;
+    if (atBottom || prefs.layout === 'stage') {
+      el.scrollTop = el.scrollHeight;
+      lastTop.current = el.scrollTop;
+    }
   }, [lastSeq, partial?.text, prefs.fontSize, prefs.layout, atBottom]);
 
   // Count only genuinely new lines (not older history loaded at the top).
@@ -72,34 +78,71 @@ export function CaptionView({ segments, partial, prefs, hasMore, onLoadEarlier, 
 
   const jumpToLive = () => {
     const el = scroller.current;
-    jumping.current = true;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    // Only flag a jump when there is somewhere to scroll; otherwise no scroll event would clear it.
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight > 1) {
+      jumping.current = true;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      setTimeout(() => {
+        jumping.current = false;
+      }, 1500);
+    }
     setAtBottom(true);
     setUnseen(0);
   };
+
+  /**
+   * Only the reader can stop the captions following. Layout changes (a partial
+   * line growing, a webfont arriving) also fire scroll events, but they never
+   * move the view up. So following stops when the view moves up (any input:
+   * touch, wheel, scrollbar, keyboard, screen reader, find in page) or right
+   * after an explicit gesture.
+   */
+  const lastIntent = useRef(0);
+  const markIntent = (e?: Event) => {
+    lastIntent.current = e?.timeStamp ?? performance.now();
+  };
+  const USER_INTENT_MS = 1500;
+  const bottomSlack = Math.max(48, prefs.fontSize * prefs.lineHeight * 1.5);
 
   const timeOf = (s: Segment) => new Date(s.ts - clockOffset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div class="caption-wrap">
-      <div
+      {/* A scrollable region must be keyboard reachable so people can scroll back with arrow keys. */}
+      <section
         class={`captions layout-${prefs.layout} align-${prefs.align}`}
         ref={scroller}
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable regions need a tab stop (WCAG 2.1.1)
         tabIndex={0}
-        aria-label="Live captions"
+        aria-label="Live captions, press End to jump to the latest"
         onScroll={(e) => {
           const el = e.currentTarget;
-          const bottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+          const bottom = el.scrollHeight - el.scrollTop - el.clientHeight < bottomSlack;
           // Ignore the intermediate scroll events of our own smooth jump to live.
           if (jumping.current) {
             if (bottom) jumping.current = false;
             return;
           }
+          const movedUp = el.scrollTop < lastTop.current - 1;
+          lastTop.current = el.scrollTop;
+          const recentGesture = e.timeStamp - lastIntent.current < USER_INTENT_MS;
+          if (!bottom && atBottom && !movedUp && !recentGesture) {
+            el.scrollTop = el.scrollHeight; // not the reader: stay pinned to the newest line
+            lastTop.current = el.scrollTop;
+            return;
+          }
           if (bottom !== atBottom) setAtBottom(bottom);
           if (bottom) setUnseen(0);
         }}
+        onWheel={markIntent}
+        onTouchStart={markIntent}
+        onTouchMove={markIntent}
+        onPointerDown={markIntent}
+        onMouseDown={markIntent}
+        onFocusIn={markIntent}
         onKeyDown={(e) => {
           if (e.key === 'End') jumpToLive();
+          else markIntent(e);
         }}
       >
         {prefs.layout === 'scroll' && (hasMore || segments.length > windowSize) && (
@@ -132,7 +175,7 @@ export function CaptionView({ segments, partial, prefs, hasMore, onLoadEarlier, 
             {partial?.text}
           </p>
         )}
-      </div>
+      </section>
       {!atBottom && prefs.layout === 'scroll' && (
         <button type="button" class="jump-live" onClick={jumpToLive}>
           <span aria-hidden="true">↓</span> Back to live{unseen > 0 ? ` (${unseen} new)` : ''}

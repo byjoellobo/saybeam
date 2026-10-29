@@ -58,12 +58,12 @@ export function DisplaySettings({ open, prefs, onChange, onClose, children }: Di
       <fieldset>
         <legend>Text size</legend>
         <div class="row gap-sm">
-          <button type="button" class="btn btn-icon" aria-label="Smaller text" onClick={() => set('fontSize', Math.max(16, prefs.fontSize - 4))}>
-            A-
+          <button type="button" class="btn btn-small" onClick={() => set('fontSize', Math.max(16, prefs.fontSize - 4))}>
+            Smaller
           </button>
           <input type="range" min={16} max={140} step={2} value={prefs.fontSize} aria-label="Text size" onInput={(e) => set('fontSize', Number(e.currentTarget.value))} />
-          <button type="button" class="btn btn-icon" aria-label="Larger text" onClick={() => set('fontSize', Math.min(140, prefs.fontSize + 4))}>
-            A+
+          <button type="button" class="btn btn-small" onClick={() => set('fontSize', Math.min(140, prefs.fontSize + 4))}>
+            Larger
           </button>
           <output>{prefs.fontSize}px</output>
         </div>

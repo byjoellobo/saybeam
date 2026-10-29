@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RoomCore, cleanText, countPresence, type ConnState, type Outcome } from '../src/room-core';
 import { MemoryRoomStore } from '../src/store';
 import { hashToken } from '../src/codes';
@@ -31,7 +31,12 @@ const first = (o: Outcome): ServerMsg => {
   return m;
 };
 
-async function join(core: RoomCore, id: string, role: 'speaker' | 'listener' | 'corrector', extra: object = {}): Promise<{ conn: ConnState; welcome: WelcomeMsg; outcome: Outcome }> {
+async function join(
+  core: RoomCore,
+  id: string,
+  role: 'speaker' | 'listener' | 'corrector',
+  extra: object = {},
+): Promise<{ conn: ConnState; welcome: WelcomeMsg; outcome: Outcome }> {
   const token = role === 'speaker' ? SPEAKER_TOKEN : role === 'corrector' ? CORRECTOR_TOKEN : undefined;
   const outcome = await core.handleFrame({ id, role: null }, frame({ t: 'hello', role, ...(token ? { token } : {}), ...extra }), NOBODY);
   const welcome = first(outcome);
@@ -300,6 +305,116 @@ describe('RoomCore', () => {
     });
   });
 
+  describe('private rooms and link rotation', () => {
+    const LISTENER_TOKEN = 'listener-token-0123456789abcdef';
+
+    async function makePrivate(): Promise<{ core: RoomCore; store: MemoryRoomStore }> {
+      const store = new MemoryRoomStore();
+      const core = new RoomCore(store, now);
+      core.initialize({
+        code: 'PRIVAT',
+        speakerTokenHash: await hashToken(SPEAKER_TOKEN),
+        correctorTokenHash: await hashToken(CORRECTOR_TOKEN),
+        listenerTokenHash: await hashToken(LISTENER_TOKEN),
+        title: 'Staff meeting',
+      });
+      return { core, store };
+    }
+
+    it('marks the room private and requires a listener secret', async () => {
+      const { core } = await makePrivate();
+      const noKey = await core.handleFrame({ id: 'l', role: null }, frame({ t: 'hello', role: 'listener' }), NOBODY);
+      expect(first(noKey)).toMatchObject({ code: 'unauthorized' });
+      expect(noKey.close?.code).toBe(CLOSE.unauthorized);
+      const withKey = await core.handleFrame({ id: 'l2', role: null }, frame({ t: 'hello', role: 'listener', token: LISTENER_TOKEN }), NOBODY);
+      expect(first(withKey)).toMatchObject({ t: 'welcome', role: 'listener', meta: { private: true } });
+      // Corrector and speaker secrets also let you listen.
+      for (const token of [CORRECTOR_TOKEN, SPEAKER_TOKEN]) {
+        const out = await core.handleFrame({ id: `x${token}`, role: null }, frame({ t: 'hello', role: 'listener', token }), NOBODY);
+        expect(first(out).t).toBe('welcome');
+      }
+      // The listener secret does not grant corrector or speaker rights.
+      const asCorrector = await core.handleFrame({ id: 'c', role: null }, frame({ t: 'hello', role: 'corrector', token: LISTENER_TOKEN }), NOBODY);
+      expect(asCorrector.close?.code).toBe(CLOSE.unauthorized);
+    });
+
+    it('treats public rooms as open to listeners and reports private: false', async () => {
+      const { core } = await makeRoom();
+      const { welcome } = await join(core, 'l', 'listener');
+      expect(welcome.meta.private).toBe(false);
+    });
+
+    it('rotates the corrector link, returns the new secret to the speaker only, and kicks correctors', async () => {
+      const { core } = await makeRoom();
+      const { conn: speaker } = await join(core, 's', 'speaker');
+      const out = await core.handleFrame(speaker, frame({ t: 'rotate', target: 'corrector' }), NOBODY);
+      const rotated = first(out);
+      expect(out.send[0]?.to).toBe('self');
+      expect(rotated).toMatchObject({ t: 'rotated', target: 'corrector' });
+      expect(out.closeRoles).toEqual({ roles: ['corrector'], code: CLOSE.unauthorized, reason: 'link replaced' });
+      const fresh = rotated.t === 'rotated' ? rotated.token : '';
+      expect(fresh).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      const old = await core.handleFrame({ id: 'c1', role: null }, frame({ t: 'hello', role: 'corrector', token: CORRECTOR_TOKEN }), NOBODY);
+      expect(old.close?.code).toBe(CLOSE.unauthorized);
+      const neu = await core.handleFrame({ id: 'c2', role: null }, frame({ t: 'hello', role: 'corrector', token: fresh }), NOBODY);
+      expect(first(neu).t).toBe('welcome');
+    });
+
+    it('rotates the listener link only in private rooms', async () => {
+      const { core } = await makeRoom();
+      const { conn: speaker } = await join(core, 's', 'speaker');
+      expect(first(await core.handleFrame(speaker, frame({ t: 'rotate', target: 'listener' }), NOBODY))).toMatchObject({ code: 'invalid' });
+
+      const priv = await makePrivate();
+      const { conn: privSpeaker } = await join(priv.core, 's', 'speaker');
+      const out = await priv.core.handleFrame(privSpeaker, frame({ t: 'rotate', target: 'listener' }), NOBODY);
+      expect(out.closeRoles?.roles).toEqual(['listener']);
+      const old = await priv.core.handleFrame({ id: 'l', role: null }, frame({ t: 'hello', role: 'listener', token: LISTENER_TOKEN }), NOBODY);
+      expect(old.close?.code).toBe(CLOSE.unauthorized);
+    });
+
+    it('refuses an old secret whose check was still in flight when the link was replaced', async () => {
+      const priv = await makePrivate();
+      const { conn: speaker } = await join(priv.core, 's', 'speaker');
+      // Slow down only the joiner's hash so the rotation completes mid-check.
+      const realDigest = crypto.subtle.digest.bind(crypto.subtle);
+      let calls = 0;
+      const spy = vi.spyOn(crypto.subtle, 'digest').mockImplementation(async (algo, data) => {
+        const mine = ++calls === 1;
+        const out = await realDigest(algo, data);
+        if (mine) await new Promise((r) => setTimeout(r, 30));
+        return out;
+      });
+      try {
+        const lateHello = priv.core.handleFrame({ id: 'late', role: null }, frame({ t: 'hello', role: 'listener', token: LISTENER_TOKEN }), NOBODY);
+        const rotation = await priv.core.handleFrame(speaker, frame({ t: 'rotate', target: 'listener' }), NOBODY);
+        expect(first(rotation).t).toBe('rotated');
+        const out = await lateHello;
+        expect(first(out)).toMatchObject({ code: 'unauthorized' });
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('forbids rotation for anyone but the speaker', async () => {
+      const { core } = await makeRoom();
+      const { conn: corrector } = await join(core, 'c', 'corrector');
+      expect(first(await core.handleFrame(corrector, frame({ t: 'rotate', target: 'corrector' }), NOBODY))).toMatchObject({ code: 'forbidden' });
+    });
+
+    it('reads old room records without meta.private', async () => {
+      const store = new MemoryRoomStore();
+      const core = new RoomCore(store, now);
+      core.initialize({ code: 'ABCDEF', speakerTokenHash: 'a', correctorTokenHash: 'b' });
+      const room = store.loadRoom();
+      if (!room) throw new Error('no room');
+      const { private: _drop, ...legacyMeta } = room.meta;
+      store.saveRoom({ ...room, meta: legacyMeta as typeof room.meta });
+      const { welcome } = await join(new RoomCore(store, now), 'l', 'listener');
+      expect(welcome.meta.private).toBe(false);
+    });
+  });
+
   describe('limits and disconnects', () => {
     it('rate limits a flooding listener', async () => {
       const { core } = await makeRoom();
@@ -374,7 +489,7 @@ describe('RoomCore', () => {
 
     it('strips control and bidi characters from captions and titles', async () => {
       expect(cleanText('a\n\n2\n00:00 --> 99:00\nFAKE')).toBe('a 2 00:00 --> 99:00 FAKE');
-      expect(cleanText('‮evil‬ title\t')).toBe('evil title');
+      expect(cleanText('\u202eevil\u202c title\t')).toBe('evil title');
       const { core } = await makeRoom();
       const { conn } = await join(core, 's', 'speaker');
       const out = await speak(core, conn, 'a', 'line one\r\nline two');

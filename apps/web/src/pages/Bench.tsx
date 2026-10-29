@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { ServerInfo } from '@caption-room/protocol';
 import { fetchInfo } from '../lib/api';
-import { navigate } from '../lib/router';
 import { downloadText } from '../lib/browser';
 import { charErrorRate, parseEquivalences, wordErrorRate, type WerResult } from '../lib/wer';
 import { PASSAGES, loadResults, percentile, storeResults, toCsv, type BenchResult } from '../lib/bench';
 import { createEngine, describeEngine, type CaptionEngine } from '../engines';
-import { LocalEngine } from '../engines/local-engine';
+import type { LocalEngine } from '../engines/local-engine';
 import { decodeToMono16k } from '../engines/audio-capture';
 import { detectCapabilities, recommendEngine, type Capabilities } from '../engines/detect';
 import type { EngineConfig, EngineStats, EngineStatus } from '../engines/types';
 import { EnginePanel } from '../components/EnginePanel';
 import { EngineStatusLine, Meter } from '../components/SpeakerBits';
+import { AppLink } from '../components/AppLink';
 
 export function Bench() {
   const [info, setInfo] = useState<ServerInfo | null>(null);
@@ -96,7 +96,7 @@ export function Bench() {
   };
 
   const runFile = async (file: File) => {
-    if (!config || config.kind !== 'local') {
+    if (config?.kind !== 'local') {
       setStatus({ phase: 'error', message: 'File tests need an on-device model. Choose "On this device".' });
       return;
     }
@@ -110,14 +110,25 @@ export function Bench() {
       await engine.ensureLoaded();
       setStatus({ phase: 'listening', message: `Transcribing ${(samples.length / 16000).toFixed(1)} s of audio...` });
       const out = await engine.transcribeFile(samples);
-      const hyp = out.segments.map((s) => s.text).filter(Boolean).join(' ');
+      const hyp = out.segments
+        .map((s) => s.text)
+        .filter(Boolean)
+        .join(' ');
       finals.current = [hyp];
       setHypothesis(hyp);
       const segTimes = out.segments.map((s) => s.asrMs);
       const audioSec = out.audioMs / 1000;
       const asrSec = out.asrMs / 1000;
       setStatus({ phase: 'ready', message: `Done: ${audioSec.toFixed(1)} s of audio in ${(out.wallMs / 1000).toFixed(1)} s.` });
-      save('file', hyp, { rtf: audioSec ? asrSec / audioSec : null, loadMs: statsRef.current.loadMs ?? null, backend: statsRef.current.backend ?? '', audioSec, asrSec, p50Ms: percentile(segTimes, 50), p95Ms: percentile(segTimes, 95) });
+      save('file', hyp, {
+        rtf: audioSec ? asrSec / audioSec : null,
+        loadMs: statsRef.current.loadMs ?? null,
+        backend: statsRef.current.backend ?? '',
+        audioSec,
+        asrSec,
+        p50Ms: percentile(segTimes, 50),
+        p95Ms: percentile(segTimes, 95),
+      });
     } catch (err) {
       setStatus({ phase: 'error', message: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -156,13 +167,14 @@ export function Bench() {
   return (
     <main class="bench narrow-wide" id="main">
       <header class="bench-head">
-        <a href="/" onClick={(e) => (e.preventDefault(), navigate('/'))} class="brand-small">
+        <AppLink href="/" class="brand-small">
           <img src="/icons/icon.svg" alt="" width={28} height={28} />
           <span>Caption Room</span>
-        </a>
+        </AppLink>
         <h1>Field-test bench</h1>
         <p class="lede">
-          Measure how fast and how accurately each speech engine works on this device and with your voice. Results stay in this browser until you export them. See <code>docs/risk-tests.md</code> for the full two-week test plan.
+          Measure how fast and how accurately each speech engine works on this device and with your voice. Results stay in this browser until you export them. See{' '}
+          <code>docs/risk-tests.md</code> for the full two-week test plan.
         </p>
       </header>
 
@@ -199,7 +211,17 @@ export function Bench() {
       <section class="card">
         <h2>Engine</h2>
         {config ? (
-          <EnginePanel config={config} onChange={setConfig} caps={caps} lang={lang} recommendation={null} disabled={recording || busy} whisperLiveUrl="ws://localhost:9090" whisperLiveModel="small" vocabulary={[]} />
+          <EnginePanel
+            config={config}
+            onChange={setConfig}
+            caps={caps}
+            lang={lang}
+            recommendation={null}
+            disabled={recording || busy}
+            whisperLiveUrl="ws://localhost:9090"
+            whisperLiveModel="small"
+            vocabulary={[]}
+          />
         ) : (
           <p class="muted">Checking what this device can do...</p>
         )}
@@ -284,7 +306,12 @@ export function Bench() {
             <button type="button" class="btn btn-small" disabled={!results.length} onClick={() => downloadText('caption-room-bench.csv', toCsv(results), 'text/csv')}>
               Export CSV
             </button>
-            <button type="button" class="btn btn-small" disabled={!results.length} onClick={() => downloadText('caption-room-bench.json', JSON.stringify(results, null, 2), 'application/json')}>
+            <button
+              type="button"
+              class="btn btn-small"
+              disabled={!results.length}
+              onClick={() => downloadText('caption-room-bench.json', JSON.stringify(results, null, 2), 'application/json')}
+            >
               Export JSON
             </button>
             <button
@@ -340,9 +367,11 @@ function ScoreView({ score }: { readonly score: WerResult }) {
   return (
     <div class="score">
       <p class="score-head">
-        <strong>Word error rate {(score.wer * 100).toFixed(1)}%</strong> ({score.substitutions} substituted, {score.deletions} missed, {score.insertions} extra, out of {score.refWords} words)
+        <strong>Word error rate {(score.wer * 100).toFixed(1)}%</strong> ({score.substitutions} substituted, {score.deletions} missed, {score.insertions} extra, out of{' '}
+        {score.refWords} words)
       </p>
-      <p class="diff" aria-label="Alignment of what was said and what was heard">
+      <p class="diff">
+        <span class="sr-only">Alignment of what was said and what was heard. Struck-through words were missed or misheard; underlined words were heard instead. </span>
         {score.ops.map((op, i) => {
           if (op.type === 'ok') return <span key={i}>{op.ref} </span>;
           if (op.type === 'sub')

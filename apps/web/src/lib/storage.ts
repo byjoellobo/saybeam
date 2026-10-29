@@ -13,6 +13,8 @@ export interface SavedRoom {
   readonly code: string;
   readonly speakerToken: string;
   readonly correctorToken: string;
+  /** Present only for private rooms: the audience QR link carries it. */
+  readonly listenerToken?: string;
   readonly title: string;
   readonly createdAt: number;
 }
@@ -54,7 +56,10 @@ export function saveRoom(room: SavedRoom): void {
 }
 
 export function forgetRoom(code: string): void {
-  write(ROOMS_KEY, listSavedRooms().filter((r) => r.code !== code));
+  write(
+    ROOMS_KEY,
+    listSavedRooms().filter((r) => r.code !== code),
+  );
   try {
     localStorage.removeItem(`caption-room:outbox:${code}`); // unsent captions for that room
   } catch {
@@ -154,13 +159,31 @@ export const DEFAULT_SPEAKER_PREFS: SpeakerPrefs = {
 function sanitizeEngine(v: unknown): EngineConfig | null {
   if (!isObj(v)) return null;
   if (v.kind === 'local' && typeof v.modelId === 'string') {
-    return { kind: 'local', modelId: v.modelId, device: oneOf(v.device, ['auto', 'webgpu', 'wasm'] as const, 'auto'), language: typeof v.language === 'string' ? v.language : null, partials: bool(v.partials, true), ...(typeof v.micId === 'string' ? { micId: v.micId } : {}) };
+    return {
+      kind: 'local',
+      modelId: v.modelId,
+      device: oneOf(v.device, ['auto', 'webgpu', 'wasm'] as const, 'auto'),
+      language: typeof v.language === 'string' ? v.language : null,
+      partials: bool(v.partials, true),
+      ...(typeof v.micId === 'string' ? { micId: v.micId } : {}),
+    };
   }
   if (v.kind === 'webspeech' && typeof v.lang === 'string') {
-    return { kind: 'webspeech', lang: v.lang, onDevice: bool(v.onDevice, false), phrases: Array.isArray(v.phrases) ? v.phrases.filter((p): p is string => typeof p === 'string') : [] };
+    return {
+      kind: 'webspeech',
+      lang: v.lang,
+      onDevice: bool(v.onDevice, false),
+      phrases: Array.isArray(v.phrases) ? v.phrases.filter((p): p is string => typeof p === 'string') : [],
+    };
   }
   if (v.kind === 'whisperlive' && typeof v.url === 'string' && typeof v.model === 'string') {
-    return { kind: 'whisperlive', url: v.url, model: v.model, language: typeof v.language === 'string' ? v.language : null, ...(typeof v.micId === 'string' ? { micId: v.micId } : {}) };
+    return {
+      kind: 'whisperlive',
+      url: v.url,
+      model: v.model,
+      language: typeof v.language === 'string' ? v.language : null,
+      ...(typeof v.micId === 'string' ? { micId: v.micId } : {}),
+    };
   }
   return null;
 }
@@ -186,5 +209,12 @@ export function saveSpeakerPrefs(prefs: SpeakerPrefs): void {
 
 /** Vocabulary textarea -> list of phrases. */
 export function vocabularyList(text: string): string[] {
-  return [...new Set(text.split(/[\n,]/).map((s) => s.trim()).filter(Boolean))].slice(0, 200);
+  return [
+    ...new Set(
+      text
+        .split(/[\n,]/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ].slice(0, 200);
 }

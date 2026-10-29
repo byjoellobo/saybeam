@@ -96,7 +96,6 @@ export class WebSpeechEngine implements CaptionEngine {
   readonly kind = 'webspeech' as const;
   private rec: Recognition | null = null;
   private wanted = false;
-  private session = 0;
   private counter = 0;
   private emitted = new Set<number>();
   private startedAt = 0;
@@ -154,7 +153,6 @@ export class WebSpeechEngine implements CaptionEngine {
   private run(ctor: RecognitionCtor): void {
     const rec = new ctor();
     this.rec = rec;
-    this.session++;
     this.emitted = new Set();
     rec.lang = this.cfg.lang;
     rec.continuous = true;

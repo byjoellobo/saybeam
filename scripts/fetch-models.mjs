@@ -18,7 +18,9 @@ const opt = (name, fallback) => {
   return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
 };
 const out = resolve(opt('out', 'relay/models'));
-const wanted = opt('models', 'moonshine-tiny,moonshine-base,whisper-base').split(',').map((s) => s.trim());
+const wanted = opt('models', 'moonshine-tiny,moonshine-base,whisper-base')
+  .split(',')
+  .map((s) => s.trim());
 
 const HF = 'https://huggingface.co';
 const SUFFIX = { fp32: '', fp16: '_fp16', q8: '_quantized', int8: '_int8', uint8: '_uint8', q4: '_q4', q4f16: '_q4f16', bnb4: '_bnb4' };

@@ -1,0 +1,17 @@
+# Keep the build context small: dependencies and build output are recreated
+# inside the image.
+node_modules
+**/node_modules
+**/target
+**/dist
+relay/models
+.git
+.github
+.playwright-mcp
+.remember
+.wrangler
+**/.wrangler
+.dev.vars*
+coverage
+bench-results
+*.log

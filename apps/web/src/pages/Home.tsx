@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'preact/hooks';
-import { formatRoomCode, normalizeRoomCode, type ServerInfo } from '@caption-room/protocol';
+import { formatRoomCode, type ServerInfo } from '@caption-room/protocol';
 import { createRoom, describeRoom, fetchInfo, ApiError } from '../lib/api';
 import { navigate, paths } from '../lib/router';
 import { forgetRoom, listSavedRooms, saveRoom, type SavedRoom } from '../lib/storage';
+import { SOURCE_URL } from '../lib/meta';
+import { parseJoinInput } from '../lib/links';
+import { AppLink } from '../components/AppLink';
 
 const LANGUAGES: ReadonlyArray<[string, string]> = [
   ['en-IN', 'English (India)'],
@@ -22,6 +25,7 @@ export function Home() {
   const [joining, setJoining] = useState(false);
   const [title, setTitle] = useState('');
   const [lang, setLang] = useState(() => (navigator.language?.startsWith('en-') ? (LANGUAGES.some(([l]) => l === navigator.language) ? navigator.language : 'en-IN') : 'en-IN'));
+  const [isPrivate, setIsPrivate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [rooms, setRooms] = useState<SavedRoom[]>(() => listSavedRooms());
@@ -32,15 +36,25 @@ export function Home() {
 
   const join = async (e: Event) => {
     e.preventDefault();
-    const normalized = normalizeRoomCode(code);
-    if (!normalized) {
+    const input = parseJoinInput(code);
+    // A pasted full link (including a private room's #k= secret) goes straight there.
+    if (input.kind === 'link') {
+      navigate(input.path);
+      return;
+    }
+    if (input.kind === 'invalid') {
       setJoinError('Room codes are 6 letters and numbers, like ABC 234.');
       return;
     }
+    const normalized = input.code;
     setJoining(true);
     setJoinError(null);
     try {
-      await describeRoom(normalized);
+      const summary = await describeRoom(normalized);
+      if (summary.private) {
+        setJoinError('This is a private room. Scan the QR code, or paste the full link from the organiser here.');
+        return;
+      }
       navigate(paths.listen(normalized));
     } catch (err) {
       setJoinError(err instanceof ApiError && err.status === 404 ? 'No room with that code. Check it with the speaker.' : err instanceof Error ? err.message : 'Could not join.');
@@ -54,7 +68,7 @@ export function Home() {
     setCreating(true);
     setCreateError(null);
     try {
-      const room = await createRoom({ title: title.trim(), lang, allowExport: true });
+      const room = await createRoom({ title: title.trim(), lang, allowExport: true, private: isPrivate });
       saveRoom({ ...room, title: title.trim(), createdAt: Date.now() });
       navigate(paths.speak(room.code));
     } catch (err) {
@@ -71,7 +85,9 @@ export function Home() {
           <img src="/icons/icon.svg" alt="" width={56} height={56} />
           <h1>Caption Room</h1>
         </div>
-        <p class="lede">Live captions that everyone in the room can follow on their own phone. Free, open source, and private by default: speech can be recognised right on the speaker's device.</p>
+        <p class="lede">
+          Live captions that everyone in the room can follow on their own phone. Free, open source, and private by default: speech can be recognised right on the speaker's device.
+        </p>
         {info?.mode === 'lan' && (
           <p class="lan-badge" role="note">
             <strong>LAN mode.</strong> This laptop is the caption server. Phones on the same Wi-Fi can join without internet.
@@ -91,13 +107,17 @@ export function Home() {
               id="room-code"
               class="code-input"
               value={code}
-              onInput={(e) => setCode(e.currentTarget.value.toUpperCase())}
+              onInput={(e) => {
+                const v = e.currentTarget.value;
+                // Keep pasted links as typed: a private room's secret is case-sensitive.
+                setCode(v.includes('/') ? v : v.toUpperCase());
+              }}
               placeholder="ABC 234"
               autocomplete="off"
               autocapitalize="characters"
               spellcheck={false}
               inputMode="text"
-              maxLength={9}
+              maxLength={300}
               aria-describedby={joinError ? 'join-error' : undefined}
             />
             {joinError && (
@@ -129,6 +149,13 @@ export function Home() {
                 ))}
               </select>
             </label>
+            <label class="switch">
+              <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.currentTarget.checked)} />
+              <span>
+                Private room
+                <small>Only people with the QR code or full link can follow. The room code alone is not enough.</small>
+              </span>
+            </label>
             {createError && (
               <p class="error" role="alert">
                 {createError}
@@ -147,9 +174,9 @@ export function Home() {
           <ul class="room-list">
             {rooms.map((r) => (
               <li key={r.code}>
-                <a href={paths.speak(r.code)} onClick={(e) => (e.preventDefault(), navigate(paths.speak(r.code)))}>
+                <AppLink href={paths.speak(r.code)}>
                   <span class="room-code-small">{formatRoomCode(r.code)}</span> {r.title || 'Untitled session'}
-                </a>
+                </AppLink>
                 <button
                   type="button"
                   class="btn btn-small btn-ghost"
@@ -171,7 +198,8 @@ export function Home() {
         <h2 id="how-title">How it works</h2>
         <ol>
           <li>
-            <strong>The speaker starts a room</strong> on a laptop or phone and picks a speech engine: a model that runs on the device, the browser's speech service, or your own WhisperLive server.
+            <strong>The speaker starts a room</strong> on a laptop or phone and picks a speech engine: a model that runs on the device, the browser's speech service, or your own
+            WhisperLive server.
           </li>
           <li>
             <strong>The audience scans the QR code.</strong> No app, no account. Each person sets their own text size and colours, scrolls back, and jumps back to live.
@@ -181,24 +209,18 @@ export function Home() {
           </li>
         </ol>
         <p class="muted">
-          Weak internet? Run the{' '}
-          <a href="/about#lan" onClick={(e) => (e.preventDefault(), navigate('/about'))}>
-            LAN relay
-          </a>{' '}
-          on the teacher's laptop and captions stay on the local network. Testing a new device or accent? Use the{' '}
-          <a href="/bench" onClick={(e) => (e.preventDefault(), navigate('/bench'))}>
-            field-test bench
-          </a>
-          .
+          Weak internet? Run the <AppLink href="/about#lan">LAN relay</AppLink> on the teacher's laptop and captions stay on the local network. Testing a new device or accent? Use
+          the <AppLink href="/bench">field-test bench</AppLink>.
         </p>
       </section>
 
       <footer class="site-footer">
         <span>Caption Room {info?.version ? `v${info.version}` : ''}</span>
-        <span>MIT licensed. In memory of Web Captioner (2017 to 2023).</span>
-        <a href="/about" onClick={(e) => (e.preventDefault(), navigate('/about'))}>
-          About and privacy
-        </a>
+        <span>
+          Free software under the GNU AGPL. <a href={SOURCE_URL}>Source code</a>
+        </span>
+        <span>In memory of Web Captioner (2017 to 2023).</span>
+        <AppLink href="/about">About and privacy</AppLink>
       </footer>
     </main>
   );

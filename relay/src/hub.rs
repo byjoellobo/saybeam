@@ -139,6 +139,9 @@ impl Hub {
         let corrector_token = generate_token();
         let speaker_token_hash = hash_token(&speaker_token);
         let corrector_token_hash = hash_token(&corrector_token);
+        // Private rooms get a third secret for listeners (carried in the QR link).
+        let listener_token = (req.private == Some(true)).then(generate_token);
+        let listener_token_hash = listener_token.as_deref().map(hash_token);
         let mut rooms = lock(&self.rooms);
         if rooms.len() >= self.settings.max_rooms {
             return Err(CreateRoomError::TooManyRooms);
@@ -151,6 +154,7 @@ impl Hub {
             code: code.clone(),
             speaker_token_hash,
             corrector_token_hash,
+            listener_token_hash,
             title: req.title,
             lang: req.lang,
             allow_export: req.allow_export,
@@ -171,6 +175,7 @@ impl Hub {
             code,
             speaker_token,
             corrector_token,
+            listener_token,
         })
     }
 
@@ -308,6 +313,15 @@ fn apply(
                     .iter()
                     .filter(|(id, e)| **id != sender && e.role == Some(Role::Speaker))
                     .map(|(id, _)| (*id, Detach::Close(replaced))),
+            );
+        }
+        if let Some(others) = outcome.close_others {
+            leaving.extend(
+                state
+                    .conns
+                    .iter()
+                    .filter(|(id, e)| **id != sender && e.role == Some(others.role))
+                    .map(|(id, _)| (*id, Detach::Close(others.close))),
             );
         }
         for (id, how) in leaving {

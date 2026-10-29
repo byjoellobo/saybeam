@@ -33,7 +33,28 @@ export interface NormalizeOptions {
   readonly spellNumbers?: boolean;
 }
 
-const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const ONES = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
+  'seventeen',
+  'eighteen',
+  'nineteen',
+];
 const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 
 /** English words for 0..999999 ("204" -> "two hundred four"). Larger numbers are left as digits. */
@@ -48,23 +69,25 @@ export function numberToWords(n: number): string | null {
 export function normalizeTokens(text: string, opts: NormalizeOptions = {}): string[] {
   const eq = opts.equivalences ?? {};
   const spell = opts.spellNumbers ?? true;
-  return text
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/[‘’ʼ]/g, "'")
-    .replace(/(\d),(?=\d{3}\b)/g, '$1')
-    .replace(/[-‐-―/]/g, ' ')
-    .replace(/[^\p{L}\p{M}\p{N}'\s]/gu, ' ')
-    .split(/\s+/)
-    .map((t) => t.replace(/^'+|'+$/g, ''))
-    .filter(Boolean)
-    .flatMap((t) => {
-      const words = spell && /^\d+$/.test(t) ? numberToWords(Number(t)) : null;
-      return words ? words.split(' ') : [t];
-    })
-    // "and" inside spoken numbers ("two hundred and four") is dropped on both sides.
-    .filter((t, i, all) => !(t === 'and' && all[i - 1] === 'hundred'))
-    .map((t) => eq[t] ?? t);
+  return (
+    text
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/[‘’ʼ]/g, "'")
+      .replace(/(\d),(?=\d{3}\b)/g, '$1')
+      .replace(/[-‐-―/]/g, ' ')
+      .replace(/[^\p{L}\p{M}\p{N}'\s]/gu, ' ')
+      .split(/\s+/)
+      .map((t) => t.replace(/^'+|'+$/g, ''))
+      .filter(Boolean)
+      .flatMap((t) => {
+        const words = spell && /^\d+$/.test(t) ? numberToWords(Number(t)) : null;
+        return words ? words.split(' ') : [t];
+      })
+      // "and" inside spoken numbers ("two hundred and four") is dropped on both sides.
+      .filter((t, i, all) => !(t === 'and' && all[i - 1] === 'hundred'))
+      .map((t) => eq[t] ?? t)
+  );
 }
 
 /** Parse "a = b" lines into an equivalence map (both sides lowercased). */

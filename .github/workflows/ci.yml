@@ -1,0 +1,201 @@
+# Checks every pull request and every push to main.
+#
+#   web          lint, type-check, unit tests with coverage, build the PWA
+#   relay        rustfmt, clippy and tests for the Rust LAN relay
+#   conformance  runs scripts/conformance.mjs against both servers
+#                (wrangler dev and the relay), so they stay identical
+#   e2e          Playwright end-to-end tests in Chromium
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its older runs. Runs on main always finish.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  WRANGLER_SEND_METRICS: "false"
+
+jobs:
+  web:
+    name: Web app
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+
+      # The conformance and e2e jobs reuse this build instead of rebuilding.
+      - name: Upload the built web app
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: web-dist
+          path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 7
+
+  relay:
+    name: LAN relay
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: relay
+
+      # The relay compiles without apps/web/dist (rust-embed allow_missing),
+      # so these checks do not need the web build.
+      - name: Check formatting
+        run: cargo fmt --manifest-path relay/Cargo.toml --check
+
+      - name: Clippy
+        run: cargo clippy --manifest-path relay/Cargo.toml --locked --all-targets -- -D warnings
+
+      - name: Tests
+        run: cargo test --manifest-path relay/Cargo.toml --locked
+
+  conformance:
+    name: Protocol conformance
+    needs: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # wrangler dev serves these files, and the relay embeds them at compile time.
+      - name: Download the built web app
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: web-dist
+          path: apps/web/dist
+
+      - run: npm ci
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: relay
+
+      - name: Build the relay
+        run: cargo build --release --locked --manifest-path relay/Cargo.toml
+
+      - name: Start the Worker (wrangler dev on port 8787)
+        working-directory: apps/worker
+        run: nohup npx wrangler dev --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler.log" 2>&1 &
+
+      - name: Start the relay (port 7300)
+        run: nohup relay/target/release/caption-room-relay --port 7300 --bind 127.0.0.1 > "$RUNNER_TEMP/relay.log" 2>&1 &
+
+      - name: Wait for both servers
+        run: |
+          deadline=$((SECONDS + 90))
+          wait_for() {
+            until curl -fs -o /dev/null "$2"; do
+              if (( SECONDS >= deadline )); then
+                echo "::error::$1 did not answer $2 within 90 seconds. Its log follows."
+                cat "$3"
+                exit 1
+              fi
+              sleep 2
+            done
+            echo "$1 is up."
+          }
+          wait_for "The Worker" http://127.0.0.1:8787/api/info "$RUNNER_TEMP/wrangler.log"
+          wait_for "The relay" http://127.0.0.1:7300/api/info "$RUNNER_TEMP/relay.log"
+
+      - name: Conformance, cloud Worker
+        run: node scripts/conformance.mjs http://127.0.0.1:8787
+
+      - name: Conformance, LAN relay
+        run: node scripts/conformance.mjs http://127.0.0.1:7300
+
+      - name: Show server logs
+        if: always()
+        run: |
+          echo "----- wrangler dev -----"
+          cat "$RUNNER_TEMP/wrangler.log" || true
+          echo "----- relay -----"
+          cat "$RUNNER_TEMP/relay.log" || true
+
+  e2e:
+    name: End-to-end tests
+    needs: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # Playwright starts its own wrangler dev server (port 8791), which serves this build.
+      - name: Download the built web app
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: web-dist
+          path: apps/web/dist
+
+      - run: npm ci
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run e2e
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -109,6 +109,9 @@ export function applyServerMsg(view: RoomView, msg: ServerMsg, opts: ApplyOption
       return { ...view, lastError: { code: msg.code, message: msg.message } };
     case 'pong':
       return { ...view, clockOffset: msg.serverTime - now };
+    case 'rotated':
+      // The new secret is the speaker's business (see RoomClient), not room state.
+      return view;
   }
 }
 

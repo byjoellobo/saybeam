@@ -46,7 +46,11 @@ fn join(hub: &Hub, room: &CreateRoomResponse, role: &str) -> Connection {
     match role {
         "speaker" => hello["token"] = json!(room.speaker_token),
         "corrector" => hello["token"] = json!(room.corrector_token),
-        _ => {}
+        _ => {
+            if let Some(token) = &room.listener_token {
+                hello["token"] = json!(token);
+            }
+        }
     }
     frame(hub, &room.code, &conn, hello);
     let msgs = drain(&mut conn);
@@ -315,4 +319,71 @@ async fn closes_connections_that_never_say_hello() {
     hub.close_if_not_joined(&room.code, joined.id);
     assert_eq!(drain(&mut pending), vec![json!({"close": 1008})]);
     assert!(drain(&mut joined).iter().all(|m| m.get("close").is_none()));
+}
+
+#[tokio::test]
+async fn private_rooms_get_a_listener_secret() {
+    let hub = Hub::default();
+    let public = hub.create_room(CreateRoomRequest::default()).expect("room");
+    assert_eq!(public.listener_token, None);
+    let req = CreateRoomRequest {
+        title: Some("Staff meeting".into()),
+        private: Some(true),
+        ..Default::default()
+    };
+    let room = hub.create_room(req).expect("room");
+    assert_eq!(room.listener_token.as_deref().map(str::len), Some(43));
+    let summary = hub.room_summary(&room.code).expect("summary");
+    assert_eq!((summary.title.as_str(), summary.private), ("", true));
+    let _listener = join(&hub, &room, "listener");
+    let mut anonymous = hub.connect(&room.code).expect("room");
+    frame(
+        &hub,
+        &room.code,
+        &anonymous,
+        json!({"t": "hello", "role": "listener"}),
+    );
+    assert_eq!(drain(&mut anonymous).last(), Some(&json!({"close": 4003})));
+}
+
+#[tokio::test]
+async fn rotation_closes_every_other_connection_with_that_role() {
+    let (hub, room) = setup();
+    let mut speaker = join(&hub, &room, "speaker");
+    let mut corrector_a = join(&hub, &room, "corrector");
+    let mut corrector_b = join(&hub, &room, "corrector");
+    let mut listener = join(&hub, &room, "listener");
+    frame(
+        &hub,
+        &room.code,
+        &speaker,
+        json!({"t": "rotate", "target": "corrector"}),
+    );
+    let to_speaker = drain(&mut speaker);
+    let rotated: Vec<&Value> = to_speaker.iter().filter(|m| m["t"] == "rotated").collect();
+    assert_eq!(rotated.len(), 1);
+    assert!(to_speaker.iter().all(|m| m.get("close").is_none()));
+    for corrector in [&mut corrector_a, &mut corrector_b] {
+        let msgs = drain(corrector);
+        assert!(
+            msgs.iter().all(|m| m["t"] != "rotated"),
+            "the secret goes to the speaker only"
+        );
+        assert_eq!(msgs.last(), Some(&json!({"close": 4003})));
+    }
+    assert!(
+        drain(&mut listener)
+            .iter()
+            .all(|m| m["t"] != "rotated" && m.get("close").is_none())
+    );
+    // The old corrector link is dead; the new one works.
+    let mut stale = hub.connect(&room.code).expect("room");
+    let hello = json!({"t": "hello", "role": "corrector", "token": room.corrector_token});
+    frame(&hub, &room.code, &stale, hello);
+    assert_eq!(drain(&mut stale).last(), Some(&json!({"close": 4003})));
+    let fresh = CreateRoomResponse {
+        corrector_token: rotated[0]["token"].as_str().unwrap_or_default().to_string(),
+        ..room.clone()
+    };
+    let _corrector = join(&hub, &fresh, "corrector");
 }

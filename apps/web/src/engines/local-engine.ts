@@ -43,10 +43,13 @@ export class LocalEngine implements CaptionEngine {
     // New run: the worker's clock restarts at zero together with ours.
     this.send({ type: 'reset' });
     this.cb.onClockStart();
-    const capture = await startCapture((samples, sampleRate) => {
-      this.cb.onLevel(Math.min(1, rms(samples) * 4));
-      this.send({ type: 'audio', samples, sampleRate }, [samples.buffer]);
-    }, this.cfg.micId ? { deviceId: this.cfg.micId } : {});
+    const capture = await startCapture(
+      (samples, sampleRate) => {
+        this.cb.onLevel(Math.min(1, rms(samples) * 4));
+        this.send({ type: 'audio', samples, sampleRate }, [samples.buffer]);
+      },
+      this.cfg.micId ? { deviceId: this.cfg.micId } : {},
+    );
     if (this.disposed) {
       // dispose() ran while the microphone prompt was open: do not leave the mic on.
       await capture.stop();
@@ -82,7 +85,7 @@ export class LocalEngine implements CaptionEngine {
     this.worker?.terminate();
     this.worker = null;
     this.ready = null;
-    this.flushWaiters.splice(0).forEach((fn) => fn());
+    for (const fn of this.flushWaiters.splice(0)) fn();
   }
 
   /** Load models without starting the mic (used by the bench and a "prepare" button). */
@@ -162,10 +165,19 @@ export class LocalEngine implements CaptionEngine {
         else this.cb.onPartial(msg.key, '');
         break;
       case 'stats':
-        this.cb.onStats({ backend: this.backend, loadMs: this.loadMs, rtf: msg.rtf, lastAsrMs: msg.lastAsrMs, lagMs: msg.lagMs, queue: msg.queue, partialEveryMs: msg.partialEveryMs, finals: this.finals });
+        this.cb.onStats({
+          backend: this.backend,
+          loadMs: this.loadMs,
+          rtf: msg.rtf,
+          lastAsrMs: msg.lastAsrMs,
+          lagMs: msg.lagMs,
+          queue: msg.queue,
+          partialEveryMs: msg.partialEveryMs,
+          finals: this.finals,
+        });
         break;
       case 'flushed':
-        this.flushWaiters.splice(0).forEach((fn) => fn());
+        for (const fn of this.flushWaiters.splice(0)) fn();
         break;
       case 'error':
         // Per-segment errors are recoverable; show them without stopping.
@@ -183,7 +195,8 @@ export class LocalEngine implements CaptionEngine {
 
 function friendlyLoadError(err: unknown): string {
   const text = err instanceof Error ? err.message : String(err);
-  if (/fetch|network|Failed to load|404/i.test(text)) return `Could not download the speech model. Check the internet connection (or use LAN mode with local models). Details: ${text}`;
+  if (/fetch|network|Failed to load|404/i.test(text))
+    return `Could not download the speech model. Check the internet connection (or use LAN mode with local models). Details: ${text}`;
   if (/memory|allocation|OOM/i.test(text)) return 'This device ran out of memory loading the model. Try Moonshine Tiny or the browser speech engine.';
   return `Could not start the speech model: ${text}`;
 }

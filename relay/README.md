@@ -12,8 +12,31 @@ the same web app, so nothing in the app changes between cloud and classroom.
 - One binary, no installer, no database. Rooms live in memory until the relay stops.
 - The web app is embedded in the binary.
 - Optional: serve the on-device speech models from the laptop too, for fully offline use.
+- The same binary (or the Docker image) can also run as an internet-facing
+  server behind HTTPS: see [docs/self-hosting.md](../docs/self-hosting.md).
 
-## Build
+## Download
+
+Prebuilt binaries for Windows (x64), macOS (Apple silicon and Intel) and Linux
+(x64) are attached to every release on
+[GitHub Releases](https://github.com/mezpos/caption-room/releases). Each
+archive holds the `caption-room-relay` program, this README and the licenses;
+`SHA256SUMS` lists the checksums. Unpack it and run the program: there is
+nothing to install.
+
+- **Windows**: SmartScreen may warn about an unknown publisher the first time.
+  Choose "More info", then "Run anyway".
+- **macOS**: if Gatekeeper refuses to open it, run
+  `xattr -d com.apple.quarantine caption-room-relay` in Terminal, in the
+  folder you unpacked.
+
+A Docker image is published as `ghcr.io/mezpos/caption-room` for servers:
+
+```sh
+docker run -p 7300:7300 ghcr.io/mezpos/caption-room
+```
+
+## Build from source
 
 You need Node 22+ and Rust (stable). From the repository root:
 
@@ -59,13 +82,13 @@ The relay prints where everyone should go:
 
 ### Flags
 
-| Flag | Default | Meaning |
-| --- | --- | --- |
-| `--port <PORT>` | `7300` | TCP port to listen on. |
-| `--bind <IP>` | `0.0.0.0` | Address to listen on. `0.0.0.0` accepts phones on every network the laptop is on. `127.0.0.1` is for testing only (phones cannot connect). |
+| Flag                   | Default         | Meaning                                                                                                                                                                                                                                                                             |
+| ---------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--port <PORT>`        | `7300`          | TCP port to listen on.                                                                                                                                                                                                                                                              |
+| `--bind <IP>`          | `0.0.0.0`       | Address to listen on. `0.0.0.0` accepts phones on every network the laptop is on. `127.0.0.1` is for testing only (phones cannot connect).                                                                                                                                          |
 | `--public-host <HOST>` | detected LAN IP | The address students should use, if the detected one is wrong (for example when the laptop has several network adapters). Accepts `192.168.1.23`, `laptop.local`, `10.0.0.5:80` or a full `http://...` URL. It is used for the QR code and returned as `publicBase` by `/api/info`. |
-| `--models-dir <DIR>` | none | Folder of speech model files to serve at `/models/`, for fully offline classrooms (see below). |
-| `--web-dir <DIR>` | embedded app | Serve the web app from a folder instead of the copy inside the binary. Handy while developing the web app (`--web-dir apps/web/dist`). |
+| `--models-dir <DIR>`   | none            | Folder of speech model files to serve at `/models/`, for fully offline classrooms (see below).                                                                                                                                                                                      |
+| `--web-dir <DIR>`      | embedded app    | Serve the web app from a folder instead of the copy inside the binary. Handy while developing the web app (`--web-dir apps/web/dist`).                                                                                                                                              |
 
 Set `RUST_LOG=caption_room_relay=debug` for connection-level logs.
 
@@ -83,6 +106,17 @@ Set `RUST_LOG=caption_room_relay=debug` for connection-level logs.
 4. **Students:** scan the QR code from the terminal (or from the speaker page)
    or type the audience address, then enter the room code. Captions appear live;
    a phone that drops off the Wi-Fi catches up automatically when it reconnects.
+
+### Private rooms
+
+A room can be created as **private**. Then the code alone is not enough to
+join: students need the link (or QR code) from the speaker page, which carries
+a secret. The room's title is hidden from anyone who only knows the code.
+
+If a link leaks, the speaker can **replace** it from the speaker page: the old
+listener (or corrector) link stops working at once, everyone using it is
+disconnected, and the speaker shares the new link or QR code. This works for
+the corrector link in every room, and for the listener link in private rooms.
 
 Some school networks isolate devices from each other ("client isolation"), so
 phones cannot reach the laptop even though both are online. If that happens,
@@ -155,6 +189,27 @@ served.
   30 seconds.
 - Ended rooms that nobody has used for 24 hours are removed from memory. All
   rooms disappear when the relay stops.
+- Room secrets (speaker, corrector and, for private rooms, listener links) are
+  32 random bytes; the relay keeps only their SHA-256 hashes.
+
+## Docker
+
+The repository's `Dockerfile` builds the web app and the relay into one small
+image that runs as a non-root user on port 7300:
+
+```sh
+docker build -t caption-room .
+docker run -p 7300:7300 caption-room
+# with offline models: mount them and pass --models-dir
+docker run -p 7300:7300 -v ./relay/models:/models:ro caption-room \
+  --bind 0.0.0.0 --port 7300 --models-dir /models
+```
+
+Arguments after the image name replace the defaults, so repeat
+`--bind 0.0.0.0 --port 7300`. Inside a container the relay cannot see the
+host's LAN address, so pass `--public-host` with the address students should
+use. HTTPS with Caddy and docker compose are covered in
+[docs/self-hosting.md](../docs/self-hosting.md).
 
 ## Development
 
@@ -169,15 +224,32 @@ The conformance script runs the same checks against the cloud server
 
 Source layout (`relay/src`):
 
-| File | Purpose |
-| --- | --- |
-| `protocol.rs` | Wire types and limits (mirrors `messages.ts`). |
-| `validate.rs` | Parsing and validation of untrusted input (mirrors `schema.ts`). |
-| `codes.rs` | Room codes, tokens, token hashing. |
-| `room.rs` | Pure room logic (mirrors `room-core.ts`), unit-tested without sockets. |
-| `hub.rs` | Rooms in memory, connections, fan-out, presence. |
-| `ws.rs` | One WebSocket connection: reader, writer, timeouts. |
-| `http.rs` | Routes and response headers. |
-| `web.rs`, `paths.rs` | Static files (embedded or from disk) and path safety. |
-| `net.rs`, `banner.rs` | LAN address detection and the startup banner. |
-| `cli.rs`, `main.rs` | Command-line flags and startup. |
+| File                  | Purpose                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| `protocol.rs`         | Wire types and limits (mirrors `messages.ts`).                         |
+| `validate.rs`         | Parsing and validation of untrusted input (mirrors `schema.ts`).       |
+| `codes.rs`            | Room codes, tokens, token hashing.                                     |
+| `room.rs`             | Pure room logic (mirrors `room-core.ts`), unit-tested without sockets. |
+| `hub.rs`              | Rooms in memory, connections, fan-out, presence.                       |
+| `ws.rs`               | One WebSocket connection: reader, writer, timeouts.                    |
+| `http.rs`             | Routes and response headers.                                           |
+| `web.rs`, `paths.rs`  | Static files (embedded or from disk) and path safety.                  |
+| `net.rs`, `banner.rs` | LAN address detection and the startup banner.                          |
+| `cli.rs`, `main.rs`   | Command-line flags and startup.                                        |
+
+## License
+
+Caption Room, including this relay, is free software under the
+[GNU Affero General Public License v3.0 or later](../LICENSE)
+(`AGPL-3.0-or-later`). If you modify it and let other people use your version
+over a network, offer them your source code; see
+[docs/self-hosting.md](../docs/self-hosting.md#license-and-your-source-code).
+
+The Rust crates compiled into the relay and their licenses are listed in
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Regenerate it after
+changing dependencies:
+
+```sh
+node relay/scripts/third_party.mjs          # all release targets
+node relay/scripts/third_party.mjs --check  # also fail if a license needs review
+```

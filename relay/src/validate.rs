@@ -8,7 +8,7 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::error::Category;
 
-use crate::protocol::{ClientMsg, CreateRoomRequest, Role, RoomStatus, limits};
+use crate::protocol::{ClientMsg, CreateRoomRequest, LinkTarget, Role, RoomStatus, limits};
 
 /// One inbound WebSocket frame as the transport delivered it.
 #[derive(Clone, Copy, Debug)]
@@ -84,6 +84,9 @@ enum RawClientMsg {
     Ping {
         ts: serde_json::Number,
     },
+    Rotate {
+        target: LinkTarget,
+    },
 }
 
 #[derive(Deserialize)]
@@ -95,6 +98,8 @@ struct RawCreateRoom {
     lang: Option<String>,
     #[serde(default, deserialize_with = "non_null")]
     allow_export: Option<bool>,
+    #[serde(default, deserialize_with = "non_null")]
+    private: Option<bool>,
 }
 
 /// Parse a raw WebSocket frame into a validated client message.
@@ -216,6 +221,7 @@ fn validate_client_msg(raw: RawClientMsg) -> Result<ClientMsg, String> {
         }
         RawClientMsg::End {} => ClientMsg::End,
         RawClientMsg::Ping { ts } => ClientMsg::Ping { ts },
+        RawClientMsg::Rotate { target } => ClientMsg::Rotate { target },
     })
 }
 
@@ -246,6 +252,7 @@ pub fn parse_create_room(body: &[u8]) -> Result<CreateRoomRequest, String> {
         title: raw.title,
         lang: raw.lang,
         allow_export: raw.allow_export,
+        private: raw.private,
     })
 }
 
@@ -453,6 +460,26 @@ mod tests {
     }
 
     #[test]
+    fn parses_rotate_and_private_rooms() {
+        assert_eq!(
+            parse(r#"{"t":"rotate","target":"listener"}"#),
+            Ok(ClientMsg::Rotate {
+                target: LinkTarget::Listener
+            })
+        );
+        assert_eq!(
+            parse(r#"{"t":"rotate","target":"corrector"}"#),
+            Ok(ClientMsg::Rotate {
+                target: LinkTarget::Corrector
+            })
+        );
+        let private = parse_create_room(br#"{"private":true}"#).map(|r| r.private);
+        assert_eq!(private, Ok(Some(true)));
+        assert!(parse_create_room(br#"{"private":"yes"}"#).is_err());
+        assert!(parse_create_room(br#"{"private":null}"#).is_err());
+    }
+
+    #[test]
     fn accepts_integral_floats_like_javascript() {
         assert_eq!(
             parse(r#"{"t":"correct","seq":2.0,"text":"x"}"#),
@@ -503,6 +530,9 @@ mod tests {
             r#"{"t":"history","before":5,"limit":0}"#,
             r#"{"t":"ping"}"#,
             r#"{"t":"ping","ts":"1"}"#,
+            r#"{"t":"rotate"}"#,
+            r#"{"t":"rotate","target":"speaker"}"#,
+            r#"{"t":"rotate","target":null}"#,
         ] {
             assert!(parse(bad).is_err(), "should reject {bad}");
         }
@@ -571,7 +601,8 @@ mod tests {
             Ok(CreateRoomRequest {
                 title: Some("Physics".into()),
                 lang: Some("fr-CA".into()),
-                allow_export: Some(false)
+                allow_export: Some(false),
+                private: None,
             })
         );
         let long_title = format!(r#"{{"title":"{}"}}"#, "t".repeat(121));

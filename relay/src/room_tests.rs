@@ -20,10 +20,16 @@ struct Harness {
 
 impl Harness {
     fn new() -> Harness {
+        Harness::with_listener_token(None)
+    }
+
+    /// A private room when `listener_token` is set.
+    fn with_listener_token(listener_token: Option<&str>) -> Harness {
         let init = RoomInit {
             code: "ABCDEF".into(),
             speaker_token_hash: hash_token(SPEAKER_TOKEN),
             corrector_token_hash: hash_token(CORRECTOR_TOKEN),
+            listener_token_hash: listener_token.map(hash_token),
             title: Some("  Physics 101  ".into()),
             lang: None,
             allow_export: None,
@@ -553,7 +559,7 @@ fn meta_is_speaker_only() {
     assert_eq!(out.send[0].to, Target::All);
     assert_eq!(
         first(&out),
-        json!({"t": "meta", "meta": {"title": "Chemistry", "lang": "en-IN", "allowExport": false, "createdAt": START}})
+        json!({"t": "meta", "meta": {"title": "Chemistry", "lang": "en-IN", "allowExport": false, "createdAt": START, "private": false}})
     );
     assert_eq!(
         first(&h.send(listener, json!({"t": "meta", "title": "x"})))["code"],
@@ -661,3 +667,7 @@ fn speaker_disconnect_clears_partial() {
 /// Tests for the abuse limits and text cleaning share the helpers above.
 #[path = "room_limit_tests.rs"]
 mod limit_tests;
+
+/// Private rooms and link rotation.
+#[path = "room_private_tests.rs"]
+mod private_tests;
