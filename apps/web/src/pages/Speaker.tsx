@@ -17,6 +17,8 @@ import { QrShare } from '../components/QrShare';
 import { StatusPill } from '../components/StatusPill';
 import { TranscriptEditor } from '../components/TranscriptEditor';
 import { Diagnostics, EngineStatusLine, Meter, PresentOverlay } from '../components/SpeakerBits';
+import { Icon } from '../components/Icon';
+import { SiteHeader } from '../components/SiteHeader';
 
 interface SpeakerProps {
   readonly code: string;
@@ -42,18 +44,21 @@ export function Speaker({ code }: SpeakerProps) {
   const saved = useSpeakerKey(code);
   if (!saved) {
     return (
-      <main class="narrow" id="main">
-        <h1>This browser is not the speaker for {formatRoomCode(code)}</h1>
-        <p>The speaker key lives in the browser that created the room. To caption from another device, open the hand-off link from the original speaker console.</p>
-        <p class="row gap-sm wrap">
-          <button type="button" class="btn btn-primary" onClick={() => navigate(paths.listen(code))}>
-            Follow the captions instead
-          </button>
-          <button type="button" class="btn" onClick={() => navigate('/')}>
-            Start a new room
-          </button>
-        </p>
-      </main>
+      <div class="page">
+        <SiteHeader />
+        <main class="narrow" id="main">
+          <h1>This browser is not the speaker for {formatRoomCode(code)}</h1>
+          <p>The speaker key lives in the browser that created the room. To caption from another device, open the hand-off link from the original speaker console.</p>
+          <p class="row gap-sm wrap">
+            <button type="button" class="btn btn-primary" onClick={() => navigate(paths.listen(code))}>
+              Follow the captions instead
+            </button>
+            <button type="button" class="btn" onClick={() => navigate('/')}>
+              Start a new room
+            </button>
+          </p>
+        </main>
+      </div>
     );
   }
   return <SpeakerConsole code={code} room={saved} />;
@@ -278,17 +283,28 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
             if (!running || confirm('Leave the speaker console? Captioning will stop.')) navigate('/');
           }}
         >
-          <img src="/icons/icon.svg" alt="" width={28} height={28} />
-          <span>Saybeam</span>
+          <img src="/icons/icon.svg" alt="" width={30} height={30} />
+          <span class="wordmark">Saybeam</span>
         </a>
-        <span class="room-code-small">{formatRoomCode(code)}</span>
+        <span class="bar-divider" aria-hidden="true" />
+        <span class="room-code-small" title="Room code">
+          {formatRoomCode(code)}
+        </span>
         <StatusPill connection={snap.connection} status={view.status} liveLabel={running ? 'Captioning' : 'Connected'} />
         <span class="listener-count" aria-live="polite">
-          {view.presence.listeners} {view.presence.listeners === 1 ? 'person' : 'people'} following
-          {view.presence.correctors > 0 ? `, ${view.presence.correctors} correcting` : ''}
+          <Icon name="users" />
+          {view.presence.listeners}
+          <span class="label-long">
+            {' '}
+            {view.presence.listeners === 1 ? 'person' : 'people'} following
+            {view.presence.correctors > 0 ? `, ${view.presence.correctors} correcting` : ''}
+          </span>
         </span>
         <button type="button" class="btn btn-small" onClick={() => setPresenting(true)}>
-          Show QR on screen
+          <Icon name="expand" />
+          <span>
+            Show QR<span class="label-long"> on screen</span>
+          </span>
         </button>
       </header>
 
@@ -314,22 +330,23 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
                 {busy ? 'Pausing...' : 'Pause'}
               </button>
             )}
-            {!running && config?.kind === 'local' && !modelReady && (
-              <button
-                type="button"
-                class="btn"
-                disabled={busy || !info}
-                onClick={() => void prepare()}
-                title="Download the speech model now, for example at home on good Wi-Fi, so class can start without internet."
-              >
-                Download model for offline use
-              </button>
-            )}
             <div class="live-meta">
               <Meter level={level} active={running} />
               <EngineStatusLine status={status} />
               {config && <small class="muted">{describeEngine(config)}</small>}
             </div>
+            {!running && config?.kind === 'local' && !modelReady && (
+              <button
+                type="button"
+                class="btn btn-small"
+                disabled={busy || !info}
+                onClick={() => void prepare()}
+                title="Download the speech model now, for example at home on good Wi-Fi, so class can start without internet."
+              >
+                <Icon name="download" />
+                Download model for offline use
+              </button>
+            )}
           </div>
           <TranscriptEditor
             segments={view.segments}
@@ -344,7 +361,10 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
 
         <aside class="side" aria-label="Room controls">
           <details class="panel" open>
-            <summary>Invite the audience</summary>
+            <summary>
+              Invite the audience
+              <Icon name="chevron" class="chevron" />
+            </summary>
             <QrShare code={code} url={listenUrl} displayUrl={listenDisplay} title={view.meta?.title ?? ''} codeAlone={!isPrivate} />
             {missingAudienceSecret ? (
               <div class="warn" role="alert">
@@ -360,7 +380,10 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
           </details>
 
           <details class="panel" open={!running}>
-            <summary>Speech engine</summary>
+            <summary>
+              Speech engine
+              <Icon name="chevron" class="chevron" />
+            </summary>
             {config ? (
               <EnginePanel
                 config={config}
@@ -380,12 +403,18 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
           </details>
 
           <details class="panel">
-            <summary>Performance</summary>
+            <summary>
+              Performance
+              <Icon name="chevron" class="chevron" />
+            </summary>
             <Diagnostics stats={stats} rttMs={snap.rttMs} pending={snap.pending.length} listeners={view.presence.listeners} />
           </details>
 
           <details class="panel">
-            <summary>Words and names</summary>
+            <summary>
+              Words and names
+              <Icon name="chevron" class="chevron" />
+            </summary>
             <label class="field">
               <span>Word replacements</span>
               <textarea
@@ -409,7 +438,10 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
           </details>
 
           <details class="panel">
-            <summary>Helpers and devices</summary>
+            <summary>
+              Helpers and devices
+              <Icon name="chevron" class="chevron" />
+            </summary>
             {correctorUrl && (
               <div class="field">
                 <span>Corrector link</span>
@@ -443,7 +475,10 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
           </details>
 
           <details class="panel">
-            <summary>Session</summary>
+            <summary>
+              Session
+              <Icon name="chevron" class="chevron" />
+            </summary>
             <label class="field">
               <span>Session name</span>
               <input value={view.meta?.title ?? ''} maxLength={120} onChange={(e) => client.setMeta({ title: e.currentTarget.value })} placeholder="Shown to listeners" />

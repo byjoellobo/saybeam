@@ -3,7 +3,7 @@ import { createRoom, expect, expectAccessible, ScriptedClient, test } from './he
 test.describe('starting a room', () => {
   test('home page is accessible and creates a room with a QR code', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Saybeam' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /Live captions for everyone in the room/ })).toBeVisible();
     await expectAccessible(page, 'home page');
 
     await page.getByLabel('Session name (optional)').fill('Physics 11B');
@@ -59,6 +59,25 @@ test.describe('following captions', () => {
     await expect(jump).toBeVisible();
     await jump.click();
     await expect(jump).toBeHidden();
+    speaker.close();
+  });
+
+  test('a latecomer lands on the newest line, not the start of the transcript', async ({ page, request, baseURL }) => {
+    const room = await createRoom(request);
+    const speaker = await ScriptedClient.connect(baseURL ?? '', room.code, 'speaker', room.speakerToken);
+    for (let i = 0; i < 14; i++) speaker.send({ t: 'final', id: `late-${i}`, text: `Earlier line ${i} about how sound travels through air and water.` });
+    await speaker.say('late-last', 'This is the newest line of the lecture.');
+
+    await page.goto(`/r/${room.code}`);
+    const newest = page.getByText('This is the newest line of the lecture.');
+    await expect(newest).toBeVisible();
+    // Web fonts arrive after the first layout and make every line taller: the view must stay on live.
+    await page.waitForFunction(() => document.fonts.check('34px "Atkinson Hyperlegible Next Variable"'));
+    await page.evaluate(() => document.fonts.ready);
+    const scroller = page.getByRole('region', { name: /Live captions/ });
+    await expect.poll(() => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThan(2);
+    await expect(newest).toBeInViewport();
+    await expect(page.getByRole('button', { name: /Back to live/ })).toBeHidden();
     speaker.close();
   });
 

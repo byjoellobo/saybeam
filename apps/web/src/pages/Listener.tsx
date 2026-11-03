@@ -13,10 +13,10 @@ interface ListenerProps {
 }
 
 const FONT_STACKS: Record<ListenerPrefs['font'], string> = {
-  hyperlegible: "'Atkinson Hyperlegible', system-ui, sans-serif",
+  hyperlegible: "'Atkinson Hyperlegible Next Variable', system-ui, sans-serif",
   system: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   serif: 'Georgia, "Times New Roman", serif',
-  mono: 'ui-monospace, "Cascadia Mono", Menlo, monospace',
+  mono: "'Atkinson Hyperlegible Mono Variable', ui-monospace, 'Cascadia Mono', Menlo, monospace",
 };
 
 /**

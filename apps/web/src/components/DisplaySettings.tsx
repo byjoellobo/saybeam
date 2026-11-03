@@ -20,10 +20,10 @@ const THEMES: ReadonlyArray<{ id: Theme; label: string }> = [
 ];
 
 const FONTS: ReadonlyArray<{ id: FontChoice; label: string }> = [
-  { id: 'hyperlegible', label: 'Atkinson Hyperlegible' },
+  { id: 'hyperlegible', label: 'Atkinson Hyperlegible Next' },
   { id: 'system', label: 'System sans' },
   { id: 'serif', label: 'Serif' },
-  { id: 'mono', label: 'Monospace' },
+  { id: 'mono', label: 'Atkinson Hyperlegible Mono' },
 ];
 
 export function DisplaySettings({ open, prefs, onChange, onClose, children }: DisplaySettingsProps) {
@@ -57,15 +57,17 @@ export function DisplaySettings({ open, prefs, onChange, onClose, children }: Di
 
       <fieldset>
         <legend>Text size</legend>
-        <div class="row gap-sm">
-          <button type="button" class="btn btn-small" onClick={() => set('fontSize', Math.max(16, prefs.fontSize - 4))}>
+        <div class="size-row">
+          <input type="range" min={16} max={140} step={2} value={prefs.fontSize} aria-label="Text size" onInput={(e) => set('fontSize', Number(e.currentTarget.value))} />
+          <output>{prefs.fontSize}px</output>
+        </div>
+        <div class="size-buttons">
+          <button type="button" class="btn" onClick={() => set('fontSize', Math.max(16, prefs.fontSize - 4))}>
             Smaller
           </button>
-          <input type="range" min={16} max={140} step={2} value={prefs.fontSize} aria-label="Text size" onInput={(e) => set('fontSize', Number(e.currentTarget.value))} />
-          <button type="button" class="btn btn-small" onClick={() => set('fontSize', Math.min(140, prefs.fontSize + 4))}>
+          <button type="button" class="btn" onClick={() => set('fontSize', Math.min(140, prefs.fontSize + 4))}>
             Larger
           </button>
-          <output>{prefs.fontSize}px</output>
         </div>
       </fieldset>
 

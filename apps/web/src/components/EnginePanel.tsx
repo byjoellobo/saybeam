@@ -70,7 +70,7 @@ export function EnginePanel({ config, onChange, caps, lang, recommendation, disa
 
   return (
     <div class="engine-panel">
-      <div class="segmented segmented-3" role="radiogroup" aria-label="Speech engine">
+      <div class="segmented" role="radiogroup" aria-label="Speech engine">
         {(
           [
             ['local', 'On this device'],

@@ -1,6 +1,6 @@
 import { render } from 'preact';
-import '@fontsource/atkinson-hyperlegible/400.css';
-import '@fontsource/atkinson-hyperlegible/700.css';
+import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
+import '@fontsource-variable/atkinson-hyperlegible-mono/wght.css';
 import './styles/base.css';
 import './styles/listener.css';
 import './styles/speaker.css';

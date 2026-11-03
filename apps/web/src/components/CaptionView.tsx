@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { PartialCaption, Segment } from '@saybeam/protocol';
+import { Icon } from './Icon';
 import type { ListenerPrefs } from '../lib/storage';
 
 interface CaptionViewProps {
@@ -17,6 +18,8 @@ const PARAGRAPH_GAP_MS = 5000;
 const PARAGRAPH_EVERY = 8;
 const RENDER_WINDOW = 600;
 const STAGE_SEGMENTS = 3;
+/** How long after a gesture the view counts as being moved by the reader. */
+const USER_INTENT_MS = 1500;
 
 interface Paragraph {
   readonly key: number;
@@ -57,6 +60,45 @@ export function CaptionView({ segments, partial, prefs, hasMore, onLoadEarlier, 
 
   /** Last scroll position we set or saw: layout growth never moves the view up, only the reader does. */
   const lastTop = useRef(0);
+  const content = useRef<HTMLDivElement>(null);
+  const following = useRef(true);
+  following.current = atBottom || prefs.layout === 'stage';
+  /** When the reader last touched, wheeled, clicked or pressed a key here (event timeStamp clock). */
+  const lastIntent = useRef(Number.NEGATIVE_INFINITY);
+  /** Older captions are being added above: keep the reader where they are. */
+  const holdPosition = useRef(false);
+  const jumpTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const pinToLive = () => {
+    const el = scroller.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    lastTop.current = el.scrollTop;
+  };
+
+  // Content can grow with no new caption at all: web fonts arriving after the first
+  // layout, a rotated phone, a longer partial line. While following, stay on live,
+  // but never fight a reader who has just started to scroll back.
+  useEffect(() => {
+    const el = scroller.current;
+    const inner = content.current;
+    if (!el || !inner || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      if (!following.current || jumping.current) return;
+      if (holdPosition.current) {
+        holdPosition.current = false;
+        return;
+      }
+      if (performance.now() - lastIntent.current < USER_INTENT_MS) return;
+      pinToLive();
+    });
+    observer.observe(inner);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      clearTimeout(jumpTimer.current);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const el = scroller.current;
@@ -82,8 +124,11 @@ export function CaptionView({ segments, partial, prefs, hasMore, onLoadEarlier, 
     if (el && el.scrollHeight - el.scrollTop - el.clientHeight > 1) {
       jumping.current = true;
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-      setTimeout(() => {
+      clearTimeout(jumpTimer.current);
+      jumpTimer.current = setTimeout(() => {
         jumping.current = false;
+        // Captions may have grown during the smooth scroll: finish on the true bottom.
+        if (following.current) pinToLive();
       }, 1500);
     }
     setAtBottom(true);
@@ -97,11 +142,9 @@ export function CaptionView({ segments, partial, prefs, hasMore, onLoadEarlier, 
    * touch, wheel, scrollbar, keyboard, screen reader, find in page) or right
    * after an explicit gesture.
    */
-  const lastIntent = useRef(0);
   const markIntent = (e?: Event) => {
     lastIntent.current = e?.timeStamp ?? performance.now();
   };
-  const USER_INTENT_MS = 1500;
   const bottomSlack = Math.max(48, prefs.fontSize * prefs.lineHeight * 1.5);
 
   const timeOf = (s: Segment) => new Date(s.ts - clockOffset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -145,40 +188,43 @@ export function CaptionView({ segments, partial, prefs, hasMore, onLoadEarlier, 
           else markIntent(e);
         }}
       >
-        {prefs.layout === 'scroll' && (hasMore || segments.length > windowSize) && (
-          <div class="load-earlier">
-            <button
-              type="button"
-              class="btn btn-small btn-ghost"
-              onClick={() => {
-                if (segments.length > windowSize) setWindowSize((n) => n + RENDER_WINDOW);
-                else onLoadEarlier();
-              }}
-            >
-              Show earlier captions
-            </button>
-          </div>
-        )}
-        {paragraphs.length === 0 && !showPartial && <p class="caption-empty">Waiting for the speaker to start...</p>}
-        {paragraphs.map((p) => (
-          <p class="caption-para" key={p.key}>
-            {prefs.showTimes && p.segments[0] && <span class="caption-time">{timeOf(p.segments[0])}</span>}
-            {p.segments.map((s) => (
-              <span key={s.seq} class={s.edited ? 'seg edited' : 'seg'}>
-                {s.text}{' '}
-              </span>
-            ))}
-          </p>
-        ))}
-        {showPartial && (
-          <p class="caption-para partial" aria-hidden="true">
-            {partial?.text}
-          </p>
-        )}
+        <div class="captions-content" ref={content}>
+          {prefs.layout === 'scroll' && (hasMore || segments.length > windowSize) && (
+            <div class="load-earlier">
+              <button
+                type="button"
+                class="btn btn-small btn-ghost"
+                onClick={() => {
+                  holdPosition.current = true;
+                  if (segments.length > windowSize) setWindowSize((n) => n + RENDER_WINDOW);
+                  else onLoadEarlier();
+                }}
+              >
+                Show earlier captions
+              </button>
+            </div>
+          )}
+          {paragraphs.length === 0 && !showPartial && <p class="caption-empty">Waiting for the speaker to start...</p>}
+          {paragraphs.map((p) => (
+            <p class="caption-para" key={p.key}>
+              {prefs.showTimes && p.segments[0] && <span class="caption-time">{timeOf(p.segments[0])}</span>}
+              {p.segments.map((s) => (
+                <span key={s.seq} class={s.edited ? 'seg edited' : 'seg'}>
+                  {s.text}{' '}
+                </span>
+              ))}
+            </p>
+          ))}
+          {showPartial && (
+            <p class="caption-para partial" aria-hidden="true">
+              {partial?.text}
+            </p>
+          )}
+        </div>
       </section>
       {!atBottom && prefs.layout === 'scroll' && (
         <button type="button" class="jump-live" onClick={jumpToLive}>
-          <span aria-hidden="true">↓</span> Back to live{unseen > 0 ? ` (${unseen} new)` : ''}
+          <Icon name="arrowDown" /> Back to live{unseen > 0 ? ` (${unseen} new)` : ''}
         </button>
       )}
       {prefs.announce && (

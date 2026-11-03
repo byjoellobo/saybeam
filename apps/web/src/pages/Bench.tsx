@@ -11,7 +11,8 @@ import { detectCapabilities, recommendEngine, type Capabilities } from '../engin
 import type { EngineConfig, EngineStats, EngineStatus } from '../engines/types';
 import { EnginePanel } from '../components/EnginePanel';
 import { EngineStatusLine, Meter } from '../components/SpeakerBits';
-import { AppLink } from '../components/AppLink';
+import { SiteHeader } from '../components/SiteHeader';
+import { SOURCE_URL } from '../lib/meta';
 
 export function Bench() {
   const [info, setInfo] = useState<ServerInfo | null>(null);
@@ -165,201 +166,200 @@ export function Bench() {
   };
 
   return (
-    <main class="bench narrow-wide" id="main">
-      <header class="bench-head">
-        <AppLink href="/" class="brand-small">
-          <img src="/icons/icon.svg" alt="" width={28} height={28} />
-          <span>Saybeam</span>
-        </AppLink>
-        <h1>Field-test bench</h1>
-        <p class="lede">
-          Measure how fast and how accurately each speech engine works on this device and with your voice. Results stay in this browser until you export them. See{' '}
-          <code>docs/risk-tests.md</code> for the full two-week test plan.
-        </p>
-      </header>
+    <div class="page">
+      <SiteHeader />
+      <main class="bench narrow-wide" id="main">
+        <header class="bench-head">
+          <h1>Field-test bench</h1>
+          <p class="lede">
+            Measure how fast and how accurately each speech engine works on this device and with your voice. Results stay in this browser until you export them. See{' '}
+            <a href={`${SOURCE_URL}/blob/main/docs/risk-tests.md`}>the field-test plan</a> for the full two weeks.
+          </p>
+        </header>
 
-      <section class="card">
-        <h2>This device</h2>
-        {caps ? (
-          <dl class="kv">
-            <dt>Processor threads</dt>
-            <dd>{caps.cores}</dd>
-            <dt>Memory</dt>
-            <dd>{caps.memoryGb ? `${caps.memoryGb} GB or more` : 'not reported'}</dd>
-            <dt>GPU (WebGPU)</dt>
-            <dd>{caps.webgpu ? caps.gpuName || 'available' : 'not available'}</dd>
-            <dt>Multi-threaded WASM</dt>
-            <dd>{caps.crossOriginIsolated ? 'yes' : 'no (single thread)'}</dd>
-            <dt>Browser speech</dt>
-            <dd>{caps.webSpeech ? (caps.webSpeechOnDevice ? 'yes, with on-device option' : 'yes (cloud)') : 'no'}</dd>
-          </dl>
-        ) : (
-          <p class="muted">Checking...</p>
-        )}
-        <div class="row gap wrap">
-          <label class="field">
-            <span>Device label</span>
-            <input value={deviceLabel} onInput={(e) => setDeviceLabel(e.currentTarget.value)} placeholder="Redmi 9A, 2 GB" />
-          </label>
-          <label class="field">
-            <span>Speaker label</span>
-            <input value={speakerLabel} onInput={(e) => setSpeakerLabel(e.currentTarget.value)} placeholder="Tamil Nadu, female, 30s" />
-          </label>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Engine</h2>
-        {config ? (
-          <EnginePanel
-            config={config}
-            onChange={setConfig}
-            caps={caps}
-            lang={lang}
-            recommendation={null}
-            disabled={recording || busy}
-            whisperLiveUrl="ws://localhost:9090"
-            whisperLiveModel="small"
-            vocabulary={[]}
-          />
-        ) : (
-          <p class="muted">Checking what this device can do...</p>
-        )}
-      </section>
-
-      <section class="card">
-        <h2>Reference text</h2>
-        <label class="field">
-          <span>Passage</span>
-          <select
-            value={passageId}
-            onChange={(e) => {
-              const id = e.currentTarget.value;
-              setPassageId(id);
-              setReference(PASSAGES.find((p) => p.id === id)?.text ?? '');
-            }}
-          >
-            {PASSAGES.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-            <option value="custom">My own text</option>
-          </select>
-        </label>
-        {passage?.note && <p class="hint">{passage.note}</p>}
-        <label class="field">
-          <span>Read this aloud (or paste the transcript of your audio file)</span>
-          <textarea class="reading" rows={6} value={reference} onInput={(e) => setReference(e.currentTarget.value)} />
-        </label>
-        <details>
-          <summary>Spelling equivalences</summary>
-          <textarea rows={4} value={equivalences} onInput={(e) => setEquivalences(e.currentTarget.value)} />
-          <small>One "variant = canonical" per line. Applied to both texts before scoring.</small>
-        </details>
-      </section>
-
-      <section class="card">
-        <h2>Run</h2>
-        <div class="row gap wrap">
-          {!recording ? (
-            <button type="button" class="btn btn-primary" disabled={!config || busy} onClick={() => void record()}>
-              Record and read aloud
-            </button>
+        <section class="card">
+          <h2>This device</h2>
+          {caps ? (
+            <dl class="kv">
+              <dt>Processor threads</dt>
+              <dd>{caps.cores}</dd>
+              <dt>Memory</dt>
+              <dd>{caps.memoryGb ? `${caps.memoryGb} GB or more` : 'not reported'}</dd>
+              <dt>GPU (WebGPU)</dt>
+              <dd>{caps.webgpu ? caps.gpuName || 'available' : 'not available'}</dd>
+              <dt>Multi-threaded WASM</dt>
+              <dd>{caps.crossOriginIsolated ? 'yes' : 'no (single thread)'}</dd>
+              <dt>Browser speech</dt>
+              <dd>{caps.webSpeech ? (caps.webSpeechOnDevice ? 'yes, with on-device option' : 'yes (cloud)') : 'no'}</dd>
+            </dl>
           ) : (
-            <button type="button" class="btn btn-stop" disabled={busy} onClick={() => void stop()}>
-              Stop and score
-            </button>
+            <p class="muted">Checking...</p>
           )}
-          <label class={`btn${config?.kind !== 'local' || busy || recording ? ' disabled' : ''}`}>
-            Transcribe an audio file
-            <input
-              type="file"
-              accept="audio/*,video/*"
-              class="sr-only"
-              disabled={config?.kind !== 'local' || busy || recording}
-              onChange={(e) => {
-                const f = e.currentTarget.files?.[0];
-                if (f) void runFile(f);
-                e.currentTarget.value = '';
-              }}
-            />
-          </label>
-          <Meter level={level} active={recording} />
-        </div>
-        <EngineStatusLine status={status} />
-        {(hypothesis || partial) && (
-          <div class="hypothesis">
-            <h3>Heard</h3>
-            <p>
-              {hypothesis} <span class="partial">{partial}</span>
-            </p>
+          <div class="row gap wrap bench-labels">
+            <label class="field">
+              <span>Device label</span>
+              <input value={deviceLabel} onInput={(e) => setDeviceLabel(e.currentTarget.value)} placeholder="Redmi 9A, 2 GB" />
+            </label>
+            <label class="field">
+              <span>Speaker label</span>
+              <input value={speakerLabel} onInput={(e) => setSpeakerLabel(e.currentTarget.value)} placeholder="Tamil Nadu, female, 30s" />
+            </label>
           </div>
-        )}
-        {score && <ScoreView score={score} />}
-      </section>
+        </section>
 
-      <section class="card">
-        <div class="row space-between wrap">
-          <h2>Results ({results.length})</h2>
-          <div class="row gap-sm wrap">
-            <button type="button" class="btn btn-small" disabled={!results.length} onClick={() => downloadText('saybeam-bench.csv', toCsv(results), 'text/csv')}>
-              Export CSV
-            </button>
-            <button
-              type="button"
-              class="btn btn-small"
-              disabled={!results.length}
-              onClick={() => downloadText('saybeam-bench.json', JSON.stringify(results, null, 2), 'application/json')}
-            >
-              Export JSON
-            </button>
-            <button
-              type="button"
-              class="btn btn-small btn-ghost"
-              disabled={!results.length}
-              onClick={() => {
-                if (!confirm('Delete all saved results from this browser?')) return;
-                setResults([]);
-                storeResults([]);
+        <section class="card">
+          <h2>Engine</h2>
+          {config ? (
+            <EnginePanel
+              config={config}
+              onChange={setConfig}
+              caps={caps}
+              lang={lang}
+              recommendation={null}
+              disabled={recording || busy}
+              whisperLiveUrl="ws://localhost:9090"
+              whisperLiveModel="small"
+              vocabulary={[]}
+            />
+          ) : (
+            <p class="muted">Checking what this device can do...</p>
+          )}
+        </section>
+
+        <section class="card">
+          <h2>Reference text</h2>
+          <label class="field">
+            <span>Passage</span>
+            <select
+              value={passageId}
+              onChange={(e) => {
+                const id = e.currentTarget.value;
+                setPassageId(id);
+                setReference(PASSAGES.find((p) => p.id === id)?.text ?? '');
               }}
             >
-              Clear
-            </button>
+              {PASSAGES.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+              <option value="custom">My own text</option>
+            </select>
+          </label>
+          {passage?.note && <p class="hint">{passage.note}</p>}
+          <label class="field">
+            <span>Read this aloud (or paste the transcript of your audio file)</span>
+            <textarea class="reading" rows={6} value={reference} onInput={(e) => setReference(e.currentTarget.value)} />
+          </label>
+          <details>
+            <summary>Spelling equivalences</summary>
+            <textarea rows={4} value={equivalences} onInput={(e) => setEquivalences(e.currentTarget.value)} />
+            <small>One "variant = canonical" per line. Applied to both texts before scoring.</small>
+          </details>
+        </section>
+
+        <section class="card">
+          <h2>Run</h2>
+          <div class="row gap wrap">
+            {!recording ? (
+              <button type="button" class="btn btn-primary" disabled={!config || busy} onClick={() => void record()}>
+                Record and read aloud
+              </button>
+            ) : (
+              <button type="button" class="btn btn-stop" disabled={busy} onClick={() => void stop()}>
+                Stop and score
+              </button>
+            )}
+            <label class={`btn${config?.kind !== 'local' || busy || recording ? ' disabled' : ''}`}>
+              Transcribe an audio file
+              <input
+                type="file"
+                accept="audio/*,video/*"
+                class="sr-only"
+                disabled={config?.kind !== 'local' || busy || recording}
+                onChange={(e) => {
+                  const f = e.currentTarget.files?.[0];
+                  if (f) void runFile(f);
+                  e.currentTarget.value = '';
+                }}
+              />
+            </label>
+            <Meter level={level} active={recording} />
           </div>
-        </div>
-        {results.length > 0 && (
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Engine</th>
-                  <th>Passage</th>
-                  <th>Speaker</th>
-                  <th>WER</th>
-                  <th>RTF</th>
-                  <th>p95 ms</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...results].reverse().map((r) => (
-                  <tr key={r.id}>
-                    <td>{new Date(r.at).toLocaleString()}</td>
-                    <td>{r.engine}</td>
-                    <td>{r.passage}</td>
-                    <td>{r.speakerLabel || 'n/a'}</td>
-                    <td>{r.wer === null ? 'n/a' : `${(r.wer * 100).toFixed(1)}%`}</td>
-                    <td>{r.rtf === null ? 'n/a' : r.rtf.toFixed(2)}</td>
-                    <td>{r.p95Ms ?? 'n/a'}</td>
+          <EngineStatusLine status={status} />
+          {(hypothesis || partial) && (
+            <div class="hypothesis">
+              <h3>Heard</h3>
+              <p>
+                {hypothesis} <span class="partial">{partial}</span>
+              </p>
+            </div>
+          )}
+          {score && <ScoreView score={score} />}
+        </section>
+
+        <section class="card">
+          <div class="row space-between wrap">
+            <h2>Results ({results.length})</h2>
+            <div class="row gap-sm wrap">
+              <button type="button" class="btn btn-small" disabled={!results.length} onClick={() => downloadText('saybeam-bench.csv', toCsv(results), 'text/csv')}>
+                Export CSV
+              </button>
+              <button
+                type="button"
+                class="btn btn-small"
+                disabled={!results.length}
+                onClick={() => downloadText('saybeam-bench.json', JSON.stringify(results, null, 2), 'application/json')}
+              >
+                Export JSON
+              </button>
+              <button
+                type="button"
+                class="btn btn-small btn-ghost"
+                disabled={!results.length}
+                onClick={() => {
+                  if (!confirm('Delete all saved results from this browser?')) return;
+                  setResults([]);
+                  storeResults([]);
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          {results.length > 0 && (
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Engine</th>
+                    <th>Passage</th>
+                    <th>Speaker</th>
+                    <th>WER</th>
+                    <th>RTF</th>
+                    <th>p95 ms</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </main>
+                </thead>
+                <tbody>
+                  {[...results].reverse().map((r) => (
+                    <tr key={r.id}>
+                      <td>{new Date(r.at).toLocaleString()}</td>
+                      <td>{r.engine}</td>
+                      <td>{r.passage}</td>
+                      <td>{r.speakerLabel || 'n/a'}</td>
+                      <td>{r.wer === null ? 'n/a' : `${(r.wer * 100).toFixed(1)}%`}</td>
+                      <td>{r.rtf === null ? 'n/a' : r.rtf.toFixed(2)}</td>
+                      <td>{r.p95Ms ?? 'n/a'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
   );
 }
 

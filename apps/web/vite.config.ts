@@ -104,13 +104,13 @@ export default defineConfig({
       includeAssets: ['icons/icon.svg', 'icons/*.png', 'audio/capture-worklet.js'],
       manifest: {
         name: 'Saybeam',
-        short_name: 'Captions',
-        description: 'Free live captions anyone in the room can follow on their own phone.',
+        short_name: 'Saybeam',
+        description: 'Live captions for everyone in the room: you speak, and everyone reads along on their own phone.',
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        background_color: '#0f1115',
-        theme_color: '#0f1115',
+        background_color: '#0d0d0d',
+        theme_color: '#151515',
         categories: ['accessibility', 'education', 'productivity'],
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },

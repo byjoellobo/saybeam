@@ -6,6 +6,7 @@ import { Corrector } from './pages/Corrector';
 import { Bench } from './pages/Bench';
 import { About } from './pages/About';
 import { navigate } from './lib/router';
+import { SiteHeader } from './components/SiteHeader';
 
 export function App() {
   const route = useRoute();
@@ -24,13 +25,16 @@ export function App() {
       return <About />;
     case 'not-found':
       return (
-        <main class="narrow" id="main">
-          <h1>That page does not exist</h1>
-          <p>Room links look like /r/ABC234. Check the code with the speaker.</p>
-          <button type="button" class="btn btn-primary" onClick={() => navigate('/')}>
-            Go to the start page
-          </button>
-        </main>
+        <div class="page">
+          <SiteHeader />
+          <main class="narrow" id="main">
+            <h1>That page does not exist</h1>
+            <p>Room links look like /r/ABC234. Check the code with the speaker.</p>
+            <button type="button" class="btn btn-primary" onClick={() => navigate('/')}>
+              Go to the start page
+            </button>
+          </main>
+        </div>
       );
   }
 }

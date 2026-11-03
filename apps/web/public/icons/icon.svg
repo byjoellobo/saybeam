@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Saybeam">
-  <rect width="512" height="512" rx="112" fill="#0f1115"/>
-  <rect x="96" y="214" width="320" height="44" rx="22" fill="#f5f2e8"/>
-  <rect x="96" y="290" width="220" height="44" rx="22" fill="#ffd23f"/>
-  <circle cx="370" cy="312" r="22" fill="#ffd23f"/>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#161616"/>
+  <rect x="88" y="100" width="336" height="244" rx="64" fill="#ffd43b"/>
+  <polygon points="140,316 140,420 252,316" fill="#ffd43b"/>
+  <rect x="144" y="162" width="224" height="42" rx="21" fill="#161616"/>
+  <rect x="144" y="238" width="128" height="42" rx="21" fill="#161616"/>
+  <rect x="294" y="226" width="22" height="66" rx="8" fill="#161616"/>
 </svg>

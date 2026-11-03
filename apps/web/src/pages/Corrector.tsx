@@ -3,6 +3,8 @@ import { formatRoomCode } from '@saybeam/protocol';
 import { useRoom } from '../lib/use-room';
 import { StatusPill } from '../components/StatusPill';
 import { TranscriptEditor } from '../components/TranscriptEditor';
+import { Icon } from '../components/Icon';
+import { SiteHeader } from '../components/SiteHeader';
 
 interface CorrectorProps {
   readonly code: string;
@@ -32,10 +34,13 @@ export function Corrector({ code }: CorrectorProps) {
 
   if (!token) {
     return (
-      <main class="narrow" id="main">
-        <h1>Corrector link needed</h1>
-        <p>Open the full corrector link the speaker shared with you. It ends with a long secret after a # sign.</p>
-      </main>
+      <div class="page">
+        <SiteHeader />
+        <main class="narrow" id="main">
+          <h1>Corrector link needed</h1>
+          <p>Open the full corrector link the speaker shared with you. It ends with a long secret after a # sign.</p>
+        </main>
+      </div>
     );
   }
 
@@ -43,13 +48,19 @@ export function Corrector({ code }: CorrectorProps) {
     <main class="corrector" id="main">
       <header class="speaker-bar">
         <span class="brand-small">
-          <img src="/icons/icon.svg" alt="" width={28} height={28} />
-          <span>Corrector</span>
+          <img src="/icons/icon.svg" alt="" width={30} height={30} />
+          <span class="wordmark">Corrector</span>
         </span>
-        <span class="room-code-small">{formatRoomCode(code)}</span>
+        <span class="bar-divider" aria-hidden="true" />
+        <span class="room-code-small" title="Room code">
+          {formatRoomCode(code)}
+        </span>
         {view.meta?.title && <span class="title-text">{view.meta.title}</span>}
         <StatusPill connection={snap.connection} status={view.status} speakerOnline={view.presence.speaker} />
-        <span class="listener-count">{view.presence.listeners} following</span>
+        <span class="listener-count">
+          <Icon name="users" />
+          {view.presence.listeners} following
+        </span>
       </header>
       {snap.connection === 'closed' && snap.closeReason && (
         <div class="banner banner-error" role="alert">

@@ -34,7 +34,8 @@ export function StatusPill({ connection, status, speakerOnline, liveLabel = 'Liv
   }
   return (
     <span class={`pill pill-${tone}`} role="status" aria-live="polite">
-      <span class="pill-dot" aria-hidden="true" />
+      {/* Keyed on the label so the pulse replays when the state changes. */}
+      <span class="pill-dot" aria-hidden="true" key={label} />
       {label}
     </span>
   );

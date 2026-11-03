@@ -110,6 +110,10 @@ export function PresentOverlay({ code, url, title, privateRoom = false, onClose 
         )}
         <p class="muted">Click anywhere or press Escape to close</p>
       </div>
+      <div class="present-brand" aria-hidden="true">
+        <img src="/icons/icon.svg" alt="" />
+        Saybeam
+      </div>
     </div>
   );
 }

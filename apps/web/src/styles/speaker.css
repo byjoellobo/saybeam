@@ -10,26 +10,37 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.6rem 1rem;
-  padding: 0.6rem 1rem;
+  gap: 0.6rem 0.9rem;
+  min-height: 60px;
+  padding: 0.55rem 1rem;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   z-index: 5;
 }
-.brand-small {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
-  color: var(--text);
-  text-decoration: none;
+.brand-small img {
+  border-radius: 7px;
+}
+.bar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--line-strong);
+}
+.speaker-bar .room-code-small {
+  font-size: 1.05rem;
 }
 .listener-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   color: var(--muted);
   font-size: 0.95rem;
   margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+.speaker-bar .title-text {
+  max-width: 28ch;
 }
 
 .speaker-grid {
@@ -38,64 +49,106 @@
   grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
   gap: 1rem;
   padding: 1rem;
-  max-width: 1400px;
+  max-width: 1440px;
   width: 100%;
   margin: 0 auto;
   align-items: start;
 }
 @media (max-width: 900px) {
   .speaker-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.side select {
+  width: 100%;
+}
+/* Phones: a compact bar that scrolls away instead of pinning several rows. */
+@media (max-width: 600px) {
+  .speaker-bar {
+    position: static;
+    gap: 0.5rem 0.7rem;
+  }
+  .speaker-bar .wordmark,
+  .speaker-bar .bar-divider {
+    display: none;
+  }
+  .speaker-bar .label-long {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 
 .panel {
   background: var(--surface);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
 }
 .side {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
+
+/* Collapsible side panels: the whole summary row is the toggle. */
+details.panel {
+  padding: 0;
+}
 details.panel > summary {
-  font-weight: 700;
+  font-weight: 750;
+  font-size: 1.0625rem;
   cursor: pointer;
   list-style: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 32px;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-lg);
 }
 details.panel > summary::-webkit-details-marker {
   display: none;
 }
-details.panel > summary::after {
-  content: "+";
-  color: var(--muted);
-  font-size: 1.3rem;
-  line-height: 1;
-}
-details.panel[open] > summary::after {
-  content: "\2212";
-}
 details.panel[open] > summary {
-  margin-bottom: 0.75rem;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+details.panel > :not(summary) {
+  margin-inline: 1.1rem;
+}
+details.panel > :last-child:not(summary) {
+  margin-bottom: 1.1rem;
+}
+.chevron {
+  color: var(--muted);
+  transition: transform 200ms var(--ease-out);
+}
+details[open] > summary .chevron {
+  transform: rotate(180deg);
+}
+details.panel > summary:hover .chevron {
+  color: var(--text);
 }
 
+/* On wide screens the transcript fills the window below the bar and stays put. */
 .live-panel {
   display: flex;
   flex-direction: column;
-  min-height: 60dvh;
-  max-height: calc(100dvh - 7rem);
+  height: calc(100dvh - 60px - 2rem);
+  min-height: 420px;
   position: sticky;
-  top: 4.5rem;
+  top: calc(60px + 1rem);
 }
 @media (max-width: 900px) {
   .live-panel {
     position: static;
+    height: auto;
+    min-height: 50dvh;
     max-height: 70dvh;
   }
 }
@@ -106,23 +159,27 @@ details.panel[open] > summary {
   position: static;
 }
 .corrector-hint {
-  margin: 0.75rem 1rem;
+  margin: 0.85rem 1rem;
+  max-width: 80ch;
 }
 
 .live-head {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 0.5rem;
+  gap: 0.75rem 1.1rem;
+  padding: 0.25rem 0 1rem;
   flex-wrap: wrap;
 }
 .btn-mic {
   min-height: 60px;
-  min-width: 210px;
+  min-width: 220px;
   font-size: 1.15rem;
+  font-weight: 750;
   border-radius: 999px;
+  padding-inline: 1.6rem;
+}
+.btn-mic.btn-primary:not(:disabled) {
+  box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--beam) 70%, transparent);
 }
 .live-meta {
   flex: 1;
@@ -133,9 +190,9 @@ details.panel[open] > summary {
 }
 
 .meter {
-  height: 8px;
+  height: 6px;
   border-radius: 999px;
-  background: var(--surface-2);
+  background: var(--surface-3);
   overflow: hidden;
   min-width: 120px;
   flex: 1;
@@ -152,6 +209,7 @@ details.panel[open] > summary {
 
 .engine-status {
   font-size: 0.95rem;
+  font-weight: 650;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -164,8 +222,8 @@ details.panel[open] > summary {
 }
 .engine-status progress {
   width: 100%;
-  height: 8px;
-  accent-color: var(--accent);
+  height: 6px;
+  accent-color: var(--control);
 }
 
 /* --------------------------------- transcript --------------------------------- */
@@ -173,11 +231,22 @@ details.panel[open] > summary {
 .transcript {
   list-style: none;
   margin: 0;
-  padding: 0.25rem 0;
+  padding: 0.6rem;
   overflow-y: auto;
   flex: 1;
-  font-size: 1.2rem;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 1.375rem;
   line-height: 1.5;
+  background: var(--caption-ground);
+  color: var(--caption-text);
+  border-radius: var(--radius);
+  scrollbar-color: var(--line-strong) transparent;
+}
+/* Short transcripts sit at the bottom of the screen, like captions; long ones scroll. */
+.transcript > :first-child {
+  margin-top: auto;
 }
 .transcript-empty,
 .transcript-more {
@@ -185,12 +254,16 @@ details.panel[open] > summary {
   padding: 1rem 0.5rem;
   text-align: center;
 }
+.transcript-empty {
+  padding: clamp(2rem, 8vh, 5rem) 1rem;
+  font-size: 1.0625rem;
+}
 .line {
   padding: 0.35rem 0.6rem;
   border-radius: 8px;
   cursor: text;
   display: flex;
-  gap: 0.6rem;
+  gap: 0.75rem;
   align-items: baseline;
 }
 .line:hover {
@@ -199,7 +272,7 @@ details.panel[open] > summary {
 .line-button {
   all: unset;
   display: flex;
-  gap: 0.6rem;
+  gap: 0.75rem;
   align-items: baseline;
   width: 100%;
   cursor: text;
@@ -216,9 +289,10 @@ details.panel[open] > summary {
 }
 .line-time {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--muted);
   flex: none;
+  font-variant-numeric: tabular-nums;
 }
 .line-text {
   flex: 1;
@@ -233,14 +307,25 @@ details.panel[open] > summary {
 }
 .line.partial {
   color: var(--muted);
-  font-style: italic;
   cursor: default;
+}
+/* The same cursor the listener sees: this line is still arriving. */
+.line.partial .line-text::after {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 1.05em;
+  margin-left: 0.15em;
+  vertical-align: -0.15em;
+  border-radius: 2px;
+  background: var(--caret);
 }
 .line.editing {
   flex-direction: column;
   align-items: stretch;
   background: var(--surface-2);
   gap: 0.5rem;
+  padding: 0.6rem;
 }
 .line-input {
   font-size: 1.15rem;
@@ -252,7 +337,7 @@ details.panel[open] > summary {
 dl.kv {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 0.35rem 1rem;
+  gap: 0.4rem 1rem;
   margin: 0;
   font-size: 0.95rem;
 }
@@ -265,9 +350,17 @@ dl.kv dd {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
+.diagnostics dl dd {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+}
+.diagnostics .warn {
+  margin-top: 0;
+}
 
 /* ----------------------------------- present ----------------------------------- */
 
+/* The projector view: black on white, readable from the back of the room. */
 .present {
   position: fixed;
   inset: 0;
@@ -277,7 +370,13 @@ dl.kv dd {
   display: grid;
   place-items: center;
   cursor: zoom-out;
-  padding: 2vmin;
+  padding: 3vmin;
+  animation: present-in 240ms var(--ease-out);
+}
+@keyframes present-in {
+  from {
+    opacity: 0;
+  }
 }
 .present-inner {
   text-align: center;
@@ -288,29 +387,53 @@ dl.kv dd {
 }
 .present-lede {
   font-size: 4vmin;
-  margin: 0 0 2vmin;
+  font-weight: 650;
+  margin: 0 0 2.5vmin;
 }
 .present-qr {
-  width: 52vmin;
-  height: 52vmin;
+  width: 50vmin;
+  height: 50vmin;
   margin: 0 auto;
 }
 .present-url {
   font-size: 3.6vmin;
-  margin: 2vmin 0 0;
+  margin: 2.5vmin 0 0;
   font-weight: 700;
 }
 .present-code {
   font-size: 5vmin;
-  margin: 1vmin 0;
+  margin: 0.5vmin 0 0;
+  font-weight: 650;
 }
 .present-code strong {
   font-family: var(--font-mono);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
+}
+.present-brand {
+  position: absolute;
+  left: 3vmin;
+  bottom: 3vmin;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+  font-size: max(1rem, 2.2vmin);
+  letter-spacing: -0.02em;
+}
+.present-brand img {
+  width: max(28px, 4vmin);
+  height: max(28px, 4vmin);
+  border-radius: 22%;
 }
 .present .muted {
   color: #555;
-  font-size: 2vmin;
+  font-size: max(0.9rem, 1.8vmin);
+  margin-top: 2vmin;
+}
+.present :focus-visible {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #000;
 }
 
 /* ------------------------------------ bench ------------------------------------ */
@@ -318,8 +441,15 @@ dl.kv dd {
 .bench-head {
   margin-bottom: 1.5rem;
 }
-.bench-head h1 {
-  margin-top: 1rem;
+.bench-labels {
+  margin-top: 1.25rem;
+  align-items: flex-start;
+}
+.bench-labels > .field {
+  flex: 1 1 18rem;
+}
+.bench-labels input {
+  width: 100%;
 }
 .reading {
   font-size: 1.25rem;
@@ -328,14 +458,14 @@ dl.kv dd {
 .hypothesis {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  background: var(--bg);
+  background: var(--surface-2);
   border-radius: var(--radius-sm);
 }
 .hypothesis h3 {
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
 }
 .hypothesis .partial {
   color: var(--muted);
@@ -348,7 +478,7 @@ dl.kv dd {
 }
 .diff {
   line-height: 1.9;
-  background: var(--bg);
+  background: var(--surface-2);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-sm);
 }
@@ -369,11 +499,12 @@ table {
   border-collapse: collapse;
   width: 100%;
   font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
 }
 th,
 td {
   text-align: left;
-  padding: 0.45rem 0.6rem;
+  padding: 0.5rem 0.6rem;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
@@ -387,10 +518,10 @@ label.btn {
 
 .present-close {
   position: absolute;
-  top: 2vmin;
-  right: 2vmin;
+  top: 3vmin;
+  right: 3vmin;
   min-height: 44px;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.1rem;
   font: inherit;
   font-weight: 700;
   border: 2px solid #000;
@@ -398,4 +529,8 @@ label.btn {
   background: #fff;
   color: #000;
   cursor: pointer;
+}
+.present-close:hover {
+  background: #000;
+  color: #fff;
 }

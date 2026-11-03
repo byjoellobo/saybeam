@@ -2,45 +2,64 @@
 .listener {
   --cap-bg: #000;
   --cap-fg: #f7f5ef;
+  --cap-caret: var(--beam);
   --cap-dim: color-mix(in srgb, var(--cap-fg) 62%, var(--cap-bg));
-  --cap-bar: #111317;
+  --cap-bar: #0f0f0f;
+  /* Status colours follow the reader's theme, not the device's light or dark setting. */
+  --cap-ok: #4ed18a;
+  --cap-warn: #f4b13e;
+  --cap-off: color-mix(in srgb, var(--cap-fg) 70%, var(--cap-bg));
   display: flex;
   flex-direction: column;
   height: 100dvh;
   background: var(--cap-bg);
   color: var(--cap-fg);
+  caret-color: var(--cap-caret);
 }
 .listener.theme-yellow {
   --cap-bg: #000;
   --cap-fg: #ffd400;
+  --cap-caret: #fff;
 }
 .listener.theme-light {
   --cap-bg: #fff;
   --cap-fg: #111;
-  --cap-bar: #f1f1f1;
+  --cap-caret: #111;
+  --cap-bar: #f2f2f2;
+  --cap-ok: #0b5a2f;
+  --cap-warn: #7a4500;
   color-scheme: light;
 }
 .listener.theme-inverse {
   --cap-bg: #ffd400;
   --cap-fg: #000;
+  --cap-caret: #000;
   --cap-bar: #f0c800;
+  --cap-ok: #064021;
+  --cap-warn: #5c3300;
   color-scheme: light;
 }
 .listener.theme-cream {
   --cap-bg: #1c1a16;
   --cap-fg: #efe4c8;
+  --cap-caret: #efe4c8;
   --cap-bar: #24211c;
+}
+.listener ::selection {
+  background: var(--cap-fg);
+  color: var(--cap-bg);
 }
 
 .listener-bar {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.45rem max(0.75rem, env(safe-area-inset-left)) 0.45rem max(0.75rem, env(safe-area-inset-right));
-  padding-top: max(0.45rem, env(safe-area-inset-top));
+  min-height: 60px;
+  padding: 0.5rem max(0.75rem, env(safe-area-inset-right)) 0.5rem max(0.75rem, env(safe-area-inset-left));
+  padding-top: max(0.5rem, env(safe-area-inset-top));
   background: var(--cap-bar);
   color: var(--cap-fg);
-  border-bottom: 1px solid color-mix(in srgb, var(--cap-fg) 15%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cap-fg) 14%, transparent);
   flex: none;
 }
 .listener-bar .room-code-small {
@@ -48,6 +67,15 @@
 }
 .listener-bar .pill {
   background: color-mix(in srgb, var(--cap-fg) 10%, transparent);
+}
+.listener-bar .pill-live {
+  color: var(--cap-ok);
+}
+.listener-bar .pill-wait {
+  color: var(--cap-warn);
+}
+.listener-bar .pill-off {
+  color: var(--cap-off);
 }
 .listener-title {
   display: flex;
@@ -63,17 +91,38 @@
   font-weight: 700;
 }
 .btn-bar {
-  background: transparent;
-  color: var(--cap-fg);
-  border-color: color-mix(in srgb, var(--cap-fg) 30%, transparent);
+  --btn-bg: transparent;
+  --btn-fg: var(--cap-fg);
+  --btn-line: color-mix(in srgb, var(--cap-fg) 32%, transparent);
   font-size: 1.15rem;
+  font-weight: 750;
   min-width: 52px;
+}
+/* Hover tints come from the reader's theme too (the generic .btn hover uses app colours). */
+.listener-bar .btn:hover:not(:disabled):not(.disabled),
+.caption-wrap .btn:hover:not(:disabled):not(.disabled),
+.listener > .banner .btn:hover:not(:disabled):not(.disabled) {
+  --btn-bg: color-mix(in srgb, var(--cap-fg) 12%, transparent);
+  --btn-fg: var(--cap-fg);
+}
+.listener-bar :focus-visible,
+.caption-wrap :focus-visible,
+.listener > .banner :focus-visible {
+  box-shadow:
+    0 0 0 2px var(--cap-bg),
+    0 0 0 4px var(--cap-fg);
 }
 
 .listener .banner {
   margin: 0.5rem 0.75rem 0;
   background: color-mix(in srgb, var(--cap-fg) 10%, var(--cap-bg));
+  border-color: color-mix(in srgb, var(--cap-fg) 25%, transparent);
   color: var(--cap-fg);
+}
+.listener .banner .btn {
+  --btn-bg: transparent;
+  --btn-fg: var(--cap-fg);
+  --btn-line: color-mix(in srgb, var(--cap-fg) 40%, transparent);
 }
 
 .caption-wrap {
@@ -86,7 +135,8 @@
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 1rem max(1rem, env(safe-area-inset-right)) 3.5rem max(1rem, env(safe-area-inset-left));
+  scrollbar-color: color-mix(in srgb, var(--cap-fg) 30%, transparent) transparent;
+  padding: 1rem max(1rem, env(safe-area-inset-right)) 4.5rem max(1rem, env(safe-area-inset-left));
   font-family: var(--cap-font);
   font-size: var(--cap-size);
   line-height: var(--cap-line);
@@ -97,8 +147,8 @@
   overflow-wrap: anywhere;
   hyphens: manual;
 }
-.captions:focus-visible {
-  box-shadow: inset 0 0 0 3px var(--accent);
+.listener .captions:focus-visible {
+  box-shadow: inset 0 0 0 3px var(--cap-fg);
   border-radius: 0;
 }
 .captions.align-center {
@@ -118,30 +168,44 @@
   color: var(--cap-dim);
   content-visibility: visible;
 }
+/* The line still being spoken ends in a cursor, so it reads as "still arriving". */
+.caption-para.partial::after {
+  content: "";
+  display: inline-block;
+  width: max(3px, 0.08em);
+  height: 0.9em;
+  margin-left: 0.12em;
+  vertical-align: -0.1em;
+  border-radius: 2px;
+  background: var(--cap-caret);
+}
 .seg.edited {
   text-decoration: underline dotted color-mix(in srgb, var(--cap-fg) 40%, transparent);
   text-underline-offset: 0.2em;
 }
 .caption-time {
   display: block;
-  font-size: max(0.75rem, 0.4em);
+  font-size: max(0.8rem, 0.4em);
   color: var(--cap-dim);
-  font-family: var(--font-ui);
+  font-family: var(--font-mono);
+  font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
 }
 .caption-empty {
   color: var(--cap-dim);
-  font-size: clamp(1.2rem, 0.6em, 2rem);
+  font-size: clamp(1.25rem, 0.6em, 2rem);
 }
 .load-earlier {
   text-align: center;
   margin-bottom: 1rem;
   font-size: 1rem;
   text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-ui);
 }
-.listener .btn-ghost {
-  color: var(--cap-fg);
+.caption-wrap .btn-ghost {
+  --btn-fg: var(--cap-fg);
 }
 
 /* Stage layout: only the latest lines, anchored to the bottom, TV style. */
@@ -155,85 +219,151 @@
   max-width: none;
 }
 
+/* Inverts the reader's own theme, so it is always the strongest thing on screen. */
 .jump-live {
   position: absolute;
   left: 50%;
   bottom: max(1rem, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  min-height: 48px;
-  padding: 0.6rem 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 50px;
+  padding: 0.6rem 1.3rem 0.6rem 1.05rem;
   border-radius: 999px;
   border: 0;
   font: inherit;
-  font-weight: 700;
-  font-size: 1rem;
-  background: var(--accent);
-  color: var(--accent-ink);
-  box-shadow: 0 6px 24px rgb(0 0 0 / 45%);
+  font-family: var(--font-ui);
+  font-weight: 750;
+  font-size: 1.0625rem;
+  white-space: nowrap;
+  background: var(--cap-fg);
+  color: var(--cap-bg);
+  box-shadow: 0 10px 28px -6px rgb(0 0 0 / 55%);
   cursor: pointer;
+  animation: rise-in 220ms var(--ease-out);
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
 }
 
 /* -------------------------------- settings sheet -------------------------------- */
 
+/* A bottom sheet on phones, a side panel on wider screens. */
 .sheet {
-  width: min(560px, 100vw);
-  max-height: min(92dvh, 900px);
-  margin: auto 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(88dvh, 900px);
+  margin: auto 0 0;
   border: 0;
-  border-radius: var(--radius) 0 0 0;
-  padding: 1.25rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0;
+  padding: 0 1.25rem max(1.25rem, env(safe-area-inset-bottom));
   background: var(--surface);
   color: var(--text);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: var(--shadow-pop);
+}
+.sheet[open] {
+  animation: sheet-up 260ms var(--ease-out);
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
 }
 @media (min-width: 700px) {
   .sheet {
-    margin: 0 0 0 auto;
+    width: 440px;
+    max-width: 440px;
     height: 100dvh;
     max-height: 100dvh;
+    margin: 0 0 0 auto;
+    border-top: 0;
+    border-left: 1px solid var(--line);
     border-radius: 0;
+  }
+  .sheet[open] {
+    animation-name: sheet-in;
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateX(24px);
+      opacity: 0;
+    }
   }
 }
 .sheet::backdrop {
   background: rgb(0 0 0 / 55%);
 }
 .sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin: 0 -1.25rem 1.25rem;
+  padding: 1rem 1.25rem 0.85rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
 .sheet-head h2 {
   margin: 0;
-}
-.sheet output {
-  min-width: 4.5ch;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
 }
 .sheet select {
   width: 100%;
+}
+.size-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.size-row output {
+  min-width: 5ch;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.size-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .swatches {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 0.5rem;
 }
 .swatch {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.6rem 0.4rem;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 0.45rem 0.45rem 0.55rem;
   border-radius: var(--radius-sm);
-  border: 2px solid var(--line);
+  border: 1.5px solid var(--line-strong);
   cursor: pointer;
   text-align: center;
+  transition: border-color 150ms var(--ease-out);
+}
+.swatch:hover {
+  border-color: var(--muted);
 }
 .swatch.selected {
-  border-color: var(--accent);
+  border-color: var(--control);
+  box-shadow: inset 0 0 0 1.5px var(--control);
 }
 .swatch input {
   position: absolute;
@@ -246,14 +376,19 @@
 }
 .swatch-sample {
   font-size: 1.6rem;
-  font-weight: 700;
-  width: 100%;
-  border-radius: 6px;
-  padding: 0.15rem 0;
+  font-weight: 750;
+  line-height: 1.5;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgb(127 127 127 / 25%);
 }
 .swatch-label {
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
+  line-height: 1.3;
   color: var(--muted);
+}
+.swatch.selected .swatch-label {
+  color: var(--text);
+  font-weight: 650;
 }
 .swatch.theme-dark .swatch-sample {
   background: #000;
@@ -275,6 +410,6 @@
   background: #1c1a16;
   color: #efe4c8;
 }
-.switches .switch {
-  border-bottom: 1px solid var(--line);
+.switches .switch + .switch {
+  border-top: 1px solid var(--line);
 }

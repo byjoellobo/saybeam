@@ -88,6 +88,18 @@ export class ScriptedClient {
 
 /** Fail on serious or critical WCAG 2.1 AA problems. */
 export async function expectAccessible(page: Page, label: string): Promise<void> {
+  // Check the settled page, not text caught halfway through an entrance animation.
+  await page.evaluate(() =>
+    Promise.race([
+      Promise.all(
+        document
+          .getAnimations()
+          .filter((a) => a.effect?.getComputedTiming().iterations !== Number.POSITIVE_INFINITY)
+          .map((a) => a.finished.catch(() => undefined)),
+      ),
+      new Promise((resolve) => setTimeout(resolve, 6000)),
+    ]),
+  );
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(

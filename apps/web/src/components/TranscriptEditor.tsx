@@ -34,6 +34,18 @@ export function TranscriptEditor({ segments, pending = [], partial, onCorrect, h
     if (el && follow && stick.current && editing === null) el.scrollTop = el.scrollHeight;
   }, [segments.length, unsent.length, partial?.text, editing, follow]);
 
+  // Web fonts arrive after the first layout and make lines taller: stay on the newest line.
+  useEffect(() => {
+    let live = true;
+    void document.fonts?.ready.then(() => {
+      const el = listRef.current;
+      if (live && el && follow && stick.current) el.scrollTop = el.scrollHeight;
+    });
+    return () => {
+      live = false;
+    };
+  }, [follow]);
+
   // Focus once when editing starts, not on every live re-render (that would steal focus from Save).
   useEffect(() => {
     if (editing !== null) inputRef.current?.focus();
@@ -50,7 +62,7 @@ export function TranscriptEditor({ segments, pending = [], partial, onCorrect, h
 
   return (
     <ol
-      class="transcript"
+      class="transcript caption-screen"
       ref={listRef}
       aria-label="Transcript"
       onScroll={(e) => {
