@@ -36,7 +36,15 @@ Check that it works:
 2. Open the address, create a room, and join it from a phone.
 3. Optionally run the protocol checks against it: `npm run conformance -- https://<your-address>`. They create a few small test rooms, which delete themselves after 24 hours.
 
-The Worker's name (and so its `workers.dev` address) is `name` in [`apps/worker/wrangler.jsonc`](../apps/worker/wrangler.jsonc). The version reported by `/api/info` is `vars.APP_VERSION` in the same file.
+The Worker's name (and so its `workers.dev` address) is `name` in [`apps/worker/wrangler.jsonc`](../apps/worker/wrangler.jsonc). The version reported by `/api/info` is `vars.APP_VERSION` in the same file. `npm run release` keeps it in step with the rest of the project ([releasing.md](releasing.md)), so do not edit it by hand.
+
+### Deploy from GitHub Actions
+
+The repository's **Deploy** workflow ([`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)) runs the same `npm run deploy` for you. It starts after each release, and you can run it by hand from the **Actions** tab on any branch or tag.
+
+It needs two secrets in a GitHub environment called `production`: `CLOUDFLARE_API_TOKEN` (an API token made from the **Edit Cloudflare Workers** template) and `CLOUDFLARE_ACCOUNT_ID`. Without the token it deploys nothing and says so, which keeps forks working. This also works in your own fork: add the environment and the secrets there. The full setup is in [ci-cd.md](ci-cd.md#secrets-and-settings).
+
+On a brand-new Cloudflare account, choose a `workers.dev` subdomain (or deploy once from your computer) before the first automated deploy, because Wrangler cannot ask for it in CI.
 
 ### Custom domain
 

@@ -69,9 +69,11 @@ apps/web            Preact + Vite PWA: speaker, listener, corrector, bench
 apps/worker         Cloudflare Worker + one Room Durable Object per room (SQLite, hibernating WebSockets)
 packages/protocol   wire types, zod validation, RoomCore (room rules), client reducer, transcript export
 relay               Rust LAN relay (axum): same protocol, embeds the built web app
-scripts             conformance test, demo speaker and load test, offline model fetcher
-docs                protocol spec, architecture, deploy guide, engines guide, risk tests
+scripts             conformance test, demo speaker and load test, offline model fetcher, release tooling
+docs                user guide, protocol spec, architecture, deploy and engine guides, risk tests, CI/CD and releasing
 ```
+
+[docs/README.md](docs/README.md) lists every document.
 
 New here? [docs/architecture.md](docs/architecture.md) explains how the pieces fit and where to start reading.
 
@@ -99,12 +101,13 @@ npm run conformance -- http://127.0.0.1:8787                   # terminal 3
 npm run conformance -- http://127.0.0.1:7300
 ```
 
-CI runs the same checks on every pull request.
+CI runs the same checks on every pull request, along with CodeQL code scanning and a review of new dependencies. [docs/ci-cd.md](docs/ci-cd.md) describes every workflow and how to run its checks locally.
 
 ## Tests
 
 ```bash
 npm run lint             # Biome: formatting and lint rules
+npm run version:check    # every package, the relay crate and CHANGELOG.md agree on the version
 npm run typecheck        # TypeScript, every workspace
 npm test                 # unit tests (protocol, room logic, audio, WER, client)
 npm run test:coverage    # the same, with coverage thresholds
@@ -119,6 +122,12 @@ npx playwright install --with-deps chromium
 ```
 
 New code comes with tests. Room logic in `room-core.ts` and `relay/src/room.rs` is pure (no sockets), so it is easy to test directly.
+
+## Changelog and releases
+
+Add a line for any user-visible change under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md), in the section that fits (**Added**, **Changed**, **Fixed** or **Security**). Write it for the people who use Saybeam.
+
+Please do not change version numbers in a pull request. Maintainers set them all at once with `npm run release` when they cut a release: see [docs/releasing.md](docs/releasing.md).
 
 ## Style
 
@@ -167,4 +176,4 @@ Forgot? Fix the last commit with `git commit --amend -s --no-edit`, or every com
 
 Saybeam is licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). By contributing, you agree that your contribution is licensed under the same terms. There is no separate agreement to sign: the DCO sign-off is all we need.
 
-Only add dependencies whose licences are compatible with the AGPL (for example MIT, BSD, Apache-2.0 or ISC), and mention any new dependency in your pull request.
+Only add dependencies whose licences are compatible with the AGPL (for example MIT, BSD, Apache-2.0 or ISC), and mention any new dependency in your pull request. The dependency review check lists the licence of each new dependency and fails if one has a known vulnerability.

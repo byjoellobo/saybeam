@@ -17,12 +17,30 @@ the same web app, so nothing in the app changes between cloud and classroom.
 
 ## Download
 
-Prebuilt binaries for Windows (x64), macOS (Apple silicon and Intel) and Linux
-(x64) are attached to every release on
-[GitHub Releases](https://github.com/byjoellobo/saybeam/releases). Each
-archive holds the `saybeam-relay` program, this README and the licenses;
-`SHA256SUMS` lists the checksums. Unpack it and run the program: there is
-nothing to install.
+Prebuilt binaries are attached to every release on
+[GitHub Releases](https://github.com/byjoellobo/saybeam/releases). Pick the
+archive for your computer (`<version>` is the release, such as `0.2.0`):
+
+| Computer              | Archive                                                   |
+| --------------------- | --------------------------------------------------------- |
+| Windows (x64)         | `saybeam-relay-<version>-x86_64-pc-windows-msvc.zip`      |
+| macOS (Apple silicon) | `saybeam-relay-<version>-aarch64-apple-darwin.tar.gz`     |
+| macOS (Intel)         | `saybeam-relay-<version>-x86_64-apple-darwin.tar.gz`      |
+| Linux (x64)           | `saybeam-relay-<version>-x86_64-unknown-linux-gnu.tar.gz` |
+
+Each archive holds the `saybeam-relay` program, this README and the licenses.
+Unpack it and run the program: there is nothing to install.
+
+To check a download, compare it with `SHA256SUMS` from the same release
+(`sha256sum --check --ignore-missing SHA256SUMS` on Linux,
+`shasum -a 256 --check --ignore-missing SHA256SUMS` on macOS,
+`Get-FileHash <file>` in PowerShell). With the
+[GitHub CLI](https://cli.github.com/) you can also confirm that this
+repository's Release workflow built it:
+
+```sh
+gh attestation verify saybeam-relay-<version>-x86_64-unknown-linux-gnu.tar.gz --repo byjoellobo/saybeam
+```
 
 - **Windows**: SmartScreen may warn about an unknown publisher the first time.
   Choose "More info", then "Run anyway".
@@ -30,7 +48,8 @@ nothing to install.
   `xattr -d com.apple.quarantine saybeam-relay` in Terminal, in the
   folder you unpacked.
 
-A Docker image is published as `ghcr.io/byjoellobo/saybeam` for servers:
+A Docker image is published as `ghcr.io/byjoellobo/saybeam` for servers,
+tagged `latest` and with each version (such as `0.2.0`):
 
 ```sh
 docker run -p 7300:7300 ghcr.io/byjoellobo/saybeam
@@ -70,7 +89,7 @@ saybeam-relay
 The relay prints where everyone should go:
 
 ```text
-  Saybeam LAN relay v0.1.0
+  Saybeam LAN relay v0.2.0
 
   Speaker:  open http://localhost:7300 on THIS laptop
             (browsers only allow the microphone on localhost or HTTPS)

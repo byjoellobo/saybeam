@@ -47,6 +47,8 @@ Please test only against your own deployment or a local server, never against ro
 - The LAN relay (`relay/`).
 - The web app (`apps/web`), including its service worker, Content Security Policy, local storage of room secrets, and the way it loads speech models.
 - The helper scripts in `scripts/`, where a problem could affect someone running them.
+- The GitHub Actions workflows in `.github/workflows`, where a problem could tamper with a release, the Docker image or the cloud deployment, or leak a secret.
+- The release files and the Docker image published by this repository.
 
 **Out of scope**
 
@@ -58,6 +60,16 @@ Please test only against your own deployment or a local server, never against ro
 - Reading the captions of a public (non-private) room with its room code. That is how public rooms are meant to work (see below).
 - Attacks that need a compromised device, a malicious browser extension, or physical access to an unlocked speaker device.
 - Plain volumetric denial of service, and reports from automated scanners with no demonstrated impact.
+
+## Verifying downloads
+
+Every [GitHub release](https://github.com/byjoellobo/saybeam/releases) lists the SHA-256 checksum of each file in `SHA256SUMS`, and carries a build provenance attestation that proves the archive was built by this repository's Release workflow. To check a download with the [GitHub CLI](https://cli.github.com/):
+
+```bash
+gh attestation verify saybeam-relay-0.2.0-x86_64-unknown-linux-gnu.tar.gz --repo byjoellobo/saybeam
+```
+
+Release files are named `saybeam-relay-<version>-<target>` and `saybeam-web-<version>.zip`. The Docker image is only published as `ghcr.io/byjoellobo/saybeam`. [docs/releasing.md](docs/releasing.md) explains how releases are made.
 
 ## How Saybeam protects rooms
 

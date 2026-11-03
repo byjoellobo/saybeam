@@ -15,7 +15,8 @@
       "!test-results",
       "!apps/web/public/icons",
       "!THIRD_PARTY_NOTICES.md",
-      "!relay/THIRD_PARTY_LICENSES.md"
+      "!relay/THIRD_PARTY_LICENSES.md",
+      "!apps/web/DESIGN.md"
     ]
   },
   "formatter": {

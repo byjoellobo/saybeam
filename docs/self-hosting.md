@@ -48,6 +48,12 @@ docker build -t saybeam .
 docker pull ghcr.io/byjoellobo/saybeam:latest
 ```
 
+Each release is tagged three ways: the exact version (`0.2.0`), the minor
+line (`0.2`) and `latest`. To upgrade only when you choose to, use the exact
+version instead of `latest` in the commands below. While Saybeam is at 0.x, a
+new minor version may need changes on your side: read its release notes
+before you upgrade (see [releasing.md](releasing.md#versions)).
+
 Run it, listening on localhost only so the proxy is the only way in:
 
 ```sh
@@ -150,7 +156,21 @@ from `https://your-domain/models/...`.
 Download a binary for your platform from
 [GitHub Releases](https://github.com/byjoellobo/saybeam/releases) (or build
 it as described in [relay/README.md](../relay/README.md)) and run it behind
-Caddy the same way. A minimal systemd unit:
+Caddy the same way. For a Linux server, that is
+`saybeam-relay-<version>-x86_64-unknown-linux-gnu.tar.gz`. Check it before you
+install it:
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS
+gh attestation verify saybeam-relay-<version>-x86_64-unknown-linux-gnu.tar.gz --repo byjoellobo/saybeam
+```
+
+Each release also has `saybeam-web-<version>.zip`, the built web app on its
+own. The relay already contains it, so you only need the zip to serve a
+different build with `--web-dir`. It cannot run rooms by itself: it needs the
+relay or the Cloudflare Worker on the same address.
+
+A minimal systemd unit:
 
 ```ini
 # /etc/systemd/system/saybeam.service
