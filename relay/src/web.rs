@@ -243,8 +243,7 @@ mod tests {
 
     #[tokio::test]
     async fn serves_files_from_a_directory_with_spa_fallback() {
-        let dir =
-            std::env::temp_dir().join(format!("saybeam-web-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("saybeam-web-test-{}", std::process::id()));
         let assets = dir.join("assets");
         std::fs::create_dir_all(&assets).expect("temp dir");
         std::fs::write(dir.join(INDEX), "<p>app</p>").expect("index");
