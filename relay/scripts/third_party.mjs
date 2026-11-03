@@ -6,7 +6,7 @@
  *   node relay/scripts/third_party.mjs [--host | --target <triple>...] [--check]
  *
  * By default it lists the union for the targets we ship release binaries for
- * (see .github/workflows/release-relay.yml), which is a superset of any one
+ * (see .github/workflows/release.yml), which is a superset of any one
  * platform. --host lists only the host target (`rustc -vV`); --target (repeat
  * it) picks targets explicitly. Licenses that are not clearly compatible with
  * AGPL-3.0-or-later are flagged in the file and on stderr; --check makes the
@@ -95,7 +95,7 @@ function acceptable(expression) {
   return tokens.length > 0 && orExpr();
 }
 
-/** Keep in step with the matrix in .github/workflows/release-relay.yml. */
+/** Keep in step with the matrix in .github/workflows/release.yml. */
 const RELEASE_TARGETS = ['x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu', 'aarch64-apple-darwin', 'x86_64-apple-darwin'];
 
 function chooseTargets() {

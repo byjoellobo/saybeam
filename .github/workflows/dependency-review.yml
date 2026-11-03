@@ -1,0 +1,28 @@
+# Dependency review: on every pull request, lists the npm, Cargo and GitHub
+# Actions dependencies it adds or changes, and fails if any of them has a
+# known vulnerability of moderate severity or worse. The report is in the
+# job summary. Licenses are shown there too; CONTRIBUTING.md explains which
+# ones Saybeam can accept.
+name: Dependency review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Review dependency changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          # A pull request comment needs `pull-requests: write`; the job summary does not.
+          comment-summary-in-pr: never

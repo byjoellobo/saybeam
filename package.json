@@ -1,7 +1,7 @@
 {
   "name": "saybeam",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Free, open live captions you can share with a room code. A successor to Web Captioner's sharing feature.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -25,7 +25,9 @@
     "e2e": "playwright test --project=app",
     "e2e:model": "playwright test --project=model",
     "notices": "node scripts/third-party-notices.mjs",
-    "screenshots": "playwright test --project=docs"
+    "screenshots": "playwright test --project=docs",
+    "release": "node scripts/release.mjs",
+    "version:check": "node scripts/release.mjs --check"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

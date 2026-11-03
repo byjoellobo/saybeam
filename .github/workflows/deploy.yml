@@ -1,0 +1,121 @@
+# Deploys the Worker and the web app to Cloudflare (what `npm run deploy` does).
+#
+# Runs when a release is published (release.yml starts it after each stable
+# release) and by hand from the Actions tab: choose the branch or tag to
+# deploy under "Use workflow from".
+#
+# Needs two secrets, ideally on the "production" environment:
+#   CLOUDFLARE_API_TOKEN   an API token with the "Edit Cloudflare Workers" template
+#   CLOUDFLARE_ACCOUNT_ID  the account to deploy to
+# Without the token (forks and fresh clones) the job finishes with a notice
+# and deploys nothing. See docs/ci-cd.md.
+name: Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, and never cancel one halfway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    name: Cloudflare (production)
+    # Prereleases are not deployed automatically; run this workflow by hand to deploy one.
+    if: github.event_name != 'release' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      WRANGLER_SEND_METRICS: "false"
+      # Footer "Source code" link in the web app (AGPL-3.0 section 13).
+      SAYBEAM_SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+    steps:
+      - name: Check for Cloudflare credentials
+        id: creds
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [[ -z "${CLOUDFLARE_API_TOKEN}" ]]; then
+            echo "::notice title=Deploy skipped::CLOUDFLARE_API_TOKEN is not set for the production environment, so nothing was deployed. docs/ci-cd.md explains how to set it up."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ -z "${CLOUDFLARE_ACCOUNT_ID}" ]]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is set but CLOUDFLARE_ACCOUNT_ID is not. Add both to the production environment."
+            exit 1
+          fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.creds.outputs.configured == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.creds.outputs.configured == 'true'
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Versions agree
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || '' }}
+        run: |
+          if [[ -n "${TAG}" ]]; then
+            node scripts/release.mjs --check "${TAG}"
+          else
+            node scripts/release.mjs --check
+          fi
+
+      - run: npm ci --no-audit --no-fund
+        if: steps.creds.outputs.configured == 'true'
+
+      # `npm run deploy` in two steps, so the build never sees the Cloudflare token.
+      - name: Build the web app
+        if: steps.creds.outputs.configured == 'true'
+        run: npm run build
+
+      - name: Deploy the Worker
+        id: deploy
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npm run deploy -w @saybeam/worker 2>&1 | tee "${RUNNER_TEMP}/deploy.log"
+          url="$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' "${RUNNER_TEMP}/deploy.log" | head -n 1 || true)"
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+
+      # /api/info reports vars.APP_VERSION, which scripts/release.mjs keeps in step.
+      - name: Check the deployed version
+        if: steps.creds.outputs.configured == 'true' && steps.deploy.outputs.url != ''
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          expected="$(node -p "require('./package.json').version")"
+          for attempt in $(seq 1 24); do
+            got="$(curl -fsS --max-time 10 "${URL}/api/info" | jq -r .version || true)"
+            if [[ "${got}" == "${expected}" ]]; then
+              echo "${URL} is serving ${expected}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}: ${URL}/api/info reports '${got}', waiting for ${expected}..."
+            sleep 5
+          done
+          echo "::error::${URL}/api/info did not report version ${expected} within 2 minutes."
+          exit 1

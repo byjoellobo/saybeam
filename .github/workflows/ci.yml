@@ -1,6 +1,7 @@
 # Checks every pull request and every push to main.
 #
-#   web          lint, type-check, unit tests with coverage, build the PWA
+#   web          lint, version check (scripts/release.mjs --check), type-check,
+#                unit tests with coverage, build the PWA
 #   relay        rustfmt, clippy and tests for the Rust LAN relay
 #   conformance  runs scripts/conformance.mjs against both servers
 #                (wrangler dev and the relay), so they stay identical
@@ -41,6 +42,7 @@ jobs:
 
       - run: npm ci
       - run: npm run lint
+      - run: npm run version:check
       - run: npm run typecheck
       - run: npm run test:coverage
       - run: npm run build
