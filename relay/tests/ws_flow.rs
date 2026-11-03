@@ -22,8 +22,7 @@ const WAIT: Duration = Duration::from_secs(3);
 
 /// A throwaway web root so static-file checks do not depend on `npm run build`.
 fn web_root(name: &str) -> PathBuf {
-    let dir =
-        std::env::temp_dir().join(format!("saybeam-relay-{name}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("saybeam-relay-{name}-{}", std::process::id()));
     std::fs::create_dir_all(dir.join("assets")).expect("temp web root");
     std::fs::write(
         dir.join("index.html"),
@@ -493,10 +492,7 @@ async fn http_routes_validation_and_headers() {
     assert_eq!(spaced.body, "spaces are fine");
     for path in ["/%2e%2e/Cargo.toml", "/CON", "/aux.js"] {
         let res = http(addr, "GET", path, "").await;
-        assert!(
-            res.body.contains("Saybeam"),
-            "{path} falls back to the app"
-        );
+        assert!(res.body.contains("Saybeam"), "{path} falls back to the app");
     }
     assert_eq!(
         http(addr, "GET", "/models/whisper.onnx", "").await.status,
@@ -506,8 +502,7 @@ async fn http_routes_validation_and_headers() {
 
 #[tokio::test]
 async fn serves_models_with_resource_policy() {
-    let models =
-        std::env::temp_dir().join(format!("saybeam-relay-models-{}", std::process::id()));
+    let models = std::env::temp_dir().join(format!("saybeam-relay-models-{}", std::process::id()));
     std::fs::create_dir_all(&models).expect("models dir");
     std::fs::write(models.join("tiny.onnx"), b"\x08\x01model").expect("model file");
     let config = ServerConfig {
