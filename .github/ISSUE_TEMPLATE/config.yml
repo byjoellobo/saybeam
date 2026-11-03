@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Report a security vulnerability
-    url: https://github.com/mezpos/caption-room/security/advisories/new
+    url: https://github.com/byjoellobo/saybeam/security/advisories/new
     about: Please report security problems privately, never in a public issue. See SECURITY.md.
   - name: Code of conduct concerns
-    url: https://github.com/mezpos/caption-room/blob/main/CODE_OF_CONDUCT.md#enforcement
+    url: https://github.com/byjoellobo/saybeam/blob/main/CODE_OF_CONDUCT.md#enforcement
     about: How to raise a conduct concern privately with the maintainers.

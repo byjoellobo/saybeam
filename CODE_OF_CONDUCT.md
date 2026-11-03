@@ -38,7 +38,7 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported privately to the community leaders responsible for enforcement through GitHub, without posting any details in public:
 
-- Open a private report from the repository's [Security tab](https://github.com/mezpos/caption-room/security/advisories/new) ("Report a vulnerability") and start the title with "Conduct:". Only the maintainers can see these reports.
+- Open a private report from the repository's [Security tab](https://github.com/byjoellobo/saybeam/security/advisories/new) ("Report a vulnerability") and start the title with "Conduct:". Only the maintainers can see these reports.
 - Or contact a maintainer on GitHub and ask for a private channel, without describing the incident in public.
 
 All complaints will be reviewed and investigated promptly and fairly.

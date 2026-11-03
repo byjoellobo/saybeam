@@ -182,7 +182,7 @@ fn setup_page() -> Response {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Caption Room relay</title>
+<title>Saybeam relay</title>
 <style>
   body { font: 18px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; color: #111; }
   code, pre { background: #f1f1f1; border-radius: 4px; padding: 0.1rem 0.3rem; }
@@ -191,7 +191,7 @@ fn setup_page() -> Response {
 </head>
 <body>
 <h1>The relay is running, but the web app is missing</h1>
-<p>This copy of <code>caption-room-relay</code> was built without the Caption Room web app.
+<p>This copy of <code>saybeam-relay</code> was built without the Saybeam web app.
 Run <code>npm run build</code> first, then rebuild the relay so the app is embedded:</p>
 <pre>npm install
 npm run build
@@ -244,7 +244,7 @@ mod tests {
     #[tokio::test]
     async fn serves_files_from_a_directory_with_spa_fallback() {
         let dir =
-            std::env::temp_dir().join(format!("caption-room-web-test-{}", std::process::id()));
+            std::env::temp_dir().join(format!("saybeam-web-test-{}", std::process::id()));
         let assets = dir.join("assets");
         std::fs::create_dir_all(&assets).expect("temp dir");
         std::fs::write(dir.join(INDEX), "<p>app</p>").expect("index");

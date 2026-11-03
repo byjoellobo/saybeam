@@ -1,9 +1,9 @@
 /**
- * Caption Room Worker: a tiny HTTP API plus WebSocket routing. Static files
+ * Saybeam Worker: a tiny HTTP API plus WebSocket routing. Static files
  * (the PWA) are served by Workers Static Assets before this code runs.
  */
-import { generateRoomCode, generateToken, hashToken, isValidRoomCode, type CreateRoomResponse, type ServerInfo } from '@caption-room/protocol';
-import { parseCreateRoom } from '@caption-room/protocol/schema';
+import { generateRoomCode, generateToken, hashToken, isValidRoomCode, type CreateRoomResponse, type ServerInfo } from '@saybeam/protocol';
+import { parseCreateRoom } from '@saybeam/protocol/schema';
 import type { Env } from './env';
 import { clientKey } from './client-key';
 

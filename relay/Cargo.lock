@@ -171,31 +171,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
-name = "caption-room-relay"
-version = "0.1.0"
-dependencies = [
- "axum",
- "base64 0.23.1",
- "clap",
- "futures-util",
- "hex",
- "local-ip-address",
- "mime_guess",
- "percent-encoding",
- "qrcode",
- "rand 0.10.3",
- "rust-embed",
- "serde",
- "serde_json",
- "sha2",
- "tokio",
- "tokio-tungstenite 0.30.0",
- "tower-http",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -968,6 +943,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "saybeam-relay"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "base64 0.23.1",
+ "clap",
+ "futures-util",
+ "hex",
+ "local-ip-address",
+ "mime_guess",
+ "percent-encoding",
+ "qrcode",
+ "rand 0.10.3",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tokio-tungstenite 0.30.0",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

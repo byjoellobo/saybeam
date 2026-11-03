@@ -125,7 +125,7 @@ jobs:
         run: nohup npx wrangler dev --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler.log" 2>&1 &
 
       - name: Start the relay (port 7300)
-        run: nohup relay/target/release/caption-room-relay --port 7300 --bind 127.0.0.1 > "$RUNNER_TEMP/relay.log" 2>&1 &
+        run: nohup relay/target/release/saybeam-relay --port 7300 --bind 127.0.0.1 > "$RUNNER_TEMP/relay.log" 2>&1 &
 
       - name: Wait for both servers
         run: |

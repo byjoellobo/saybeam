@@ -1,6 +1,6 @@
-# Self-hosting Caption Room
+# Self-hosting Saybeam
 
-Caption Room runs in two ways that speak the same protocol and serve the same
+Saybeam runs in two ways that speak the same protocol and serve the same
 web app:
 
 - **Cloudflare** (Workers plus Durable Objects). Global, rooms survive restarts
@@ -43,17 +43,17 @@ Build the image from the repository root (it builds the web app and embeds it
 in the relay), or pull a released one:
 
 ```sh
-docker build -t caption-room .
+docker build -t saybeam .
 # or
-docker pull ghcr.io/mezpos/caption-room:latest
+docker pull ghcr.io/byjoellobo/saybeam:latest
 ```
 
 Run it, listening on localhost only so the proxy is the only way in:
 
 ```sh
-docker run -d --name caption-room --restart unless-stopped \
+docker run -d --name saybeam --restart unless-stopped \
   -p 127.0.0.1:7300:7300 \
-  ghcr.io/mezpos/caption-room:latest \
+  ghcr.io/byjoellobo/saybeam:latest \
   --bind 0.0.0.0 --port 7300 --public-host https://captions.example.org
 ```
 
@@ -85,7 +85,7 @@ Relay and Caddy together. Save the compose file and a `Caddyfile` side by side:
 # compose.yaml
 services:
   relay:
-    image: ghcr.io/mezpos/caption-room:latest
+    image: ghcr.io/byjoellobo/saybeam:latest
     # build: .   # to build from a checkout of this repository instead
     command:
       - --bind
@@ -148,19 +148,19 @@ from `https://your-domain/models/...`.
 ## Without Docker
 
 Download a binary for your platform from
-[GitHub Releases](https://github.com/mezpos/caption-room/releases) (or build
+[GitHub Releases](https://github.com/byjoellobo/saybeam/releases) (or build
 it as described in [relay/README.md](../relay/README.md)) and run it behind
 Caddy the same way. A minimal systemd unit:
 
 ```ini
-# /etc/systemd/system/caption-room.service
+# /etc/systemd/system/saybeam.service
 [Unit]
-Description=Caption Room relay
+Description=Saybeam relay
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/caption-room-relay --bind 127.0.0.1 --port 7300 --public-host https://captions.example.org
+ExecStart=/usr/local/bin/saybeam-relay --bind 127.0.0.1 --port 7300 --public-host https://captions.example.org
 DynamicUser=yes
 Restart=on-failure
 
@@ -168,13 +168,13 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-Enable it with `systemctl enable --now caption-room`. Set
-`Environment=RUST_LOG=caption_room_relay=debug` in `[Service]` for
+Enable it with `systemctl enable --now saybeam`. Set
+`Environment=RUST_LOG=saybeam_relay=debug` in `[Service]` for
 connection-level logs.
 
 ## License and your source code
 
-Caption Room is licensed under the GNU Affero General Public License,
+Saybeam is licensed under the GNU Affero General Public License,
 version 3 or later (AGPL-3.0-or-later). Running it unmodified for others needs
 nothing beyond keeping the license notices. If you **modify** it and let other
 people use it over a network, the AGPL requires you to offer those users the
@@ -184,11 +184,11 @@ The web app has a "Source code" link for this. Point it at your repository
 when you build:
 
 ```sh
-docker build --build-arg CAPTION_ROOM_SOURCE_URL=https://git.example.org/you/caption-room -t caption-room .
+docker build --build-arg SAYBEAM_SOURCE_URL=https://git.example.org/you/saybeam -t saybeam .
 # or, building by hand
-CAPTION_ROOM_SOURCE_URL=https://git.example.org/you/caption-room npm run build
+SAYBEAM_SOURCE_URL=https://git.example.org/you/saybeam npm run build
 ```
 
 Licenses of the Rust crates compiled into the relay are listed in
 [relay/THIRD_PARTY_LICENSES.md](../relay/THIRD_PARTY_LICENSES.md); the Docker
-image also carries a copy in `/usr/share/doc/caption-room/`.
+image also carries a copy in `/usr/share/doc/saybeam/`.

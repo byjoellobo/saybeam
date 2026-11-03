@@ -1,4 +1,4 @@
-# Caption Room LAN relay
+# Saybeam LAN relay
 
 A small server that runs on a teacher's laptop so live captions work in a
 school with weak or no internet. The speaker's browser on the laptop
@@ -19,21 +19,21 @@ the same web app, so nothing in the app changes between cloud and classroom.
 
 Prebuilt binaries for Windows (x64), macOS (Apple silicon and Intel) and Linux
 (x64) are attached to every release on
-[GitHub Releases](https://github.com/mezpos/caption-room/releases). Each
-archive holds the `caption-room-relay` program, this README and the licenses;
+[GitHub Releases](https://github.com/byjoellobo/saybeam/releases). Each
+archive holds the `saybeam-relay` program, this README and the licenses;
 `SHA256SUMS` lists the checksums. Unpack it and run the program: there is
 nothing to install.
 
 - **Windows**: SmartScreen may warn about an unknown publisher the first time.
   Choose "More info", then "Run anyway".
 - **macOS**: if Gatekeeper refuses to open it, run
-  `xattr -d com.apple.quarantine caption-room-relay` in Terminal, in the
+  `xattr -d com.apple.quarantine saybeam-relay` in Terminal, in the
   folder you unpacked.
 
-A Docker image is published as `ghcr.io/mezpos/caption-room` for servers:
+A Docker image is published as `ghcr.io/byjoellobo/saybeam` for servers:
 
 ```sh
-docker run -p 7300:7300 ghcr.io/mezpos/caption-room
+docker run -p 7300:7300 ghcr.io/byjoellobo/saybeam
 ```
 
 ## Build from source
@@ -47,7 +47,7 @@ cargo build --release --manifest-path relay/Cargo.toml     # embeds it into the 
 ```
 
 or both at once with `npm run build:relay`. The binary is
-`relay/target/release/caption-room-relay` (`.exe` on Windows). Copy it anywhere;
+`relay/target/release/saybeam-relay` (`.exe` on Windows). Copy it anywhere;
 it has no other files.
 
 Build the web app **first**: the relay embeds whatever is in `apps/web/dist` at
@@ -64,13 +64,13 @@ MinGW-w64 install (for example from MSYS2) on your `PATH`.
 ## Run
 
 ```sh
-caption-room-relay
+saybeam-relay
 ```
 
 The relay prints where everyone should go:
 
 ```text
-  Caption Room LAN relay v0.1.0
+  Saybeam LAN relay v0.1.0
 
   Speaker:  open http://localhost:7300 on THIS laptop
             (browsers only allow the microphone on localhost or HTTPS)
@@ -90,7 +90,7 @@ The relay prints where everyone should go:
 | `--models-dir <DIR>`   | none            | Folder of speech model files to serve at `/models/`, for fully offline classrooms (see below).                                                                                                                                                                                      |
 | `--web-dir <DIR>`      | embedded app    | Serve the web app from a folder instead of the copy inside the binary. Handy while developing the web app (`--web-dir apps/web/dist`).                                                                                                                                              |
 
-Set `RUST_LOG=caption_room_relay=debug` for connection-level logs.
+Set `RUST_LOG=saybeam_relay=debug` for connection-level logs.
 
 ## Using it in a classroom
 
@@ -131,7 +131,7 @@ cannot connect, allow inbound TCP on the relay's port from an administrator
 PowerShell:
 
 ```powershell
-New-NetFirewallRule -DisplayName "Caption Room relay" -Direction Inbound -Protocol TCP -LocalPort 7300 -Action Allow
+New-NetFirewallRule -DisplayName "Saybeam relay" -Direction Inbound -Protocol TCP -LocalPort 7300 -Action Allow
 ```
 
 On macOS, accept the "allow incoming connections" prompt. On Linux, open the
@@ -150,7 +150,7 @@ node scripts/fetch-models.mjs --out relay/models
 then start the relay with them:
 
 ```sh
-caption-room-relay --models-dir relay/models
+saybeam-relay --models-dir relay/models
 ```
 
 `/api/info` then reports `localModels: true`, and the web app loads the models
@@ -198,10 +198,10 @@ The repository's `Dockerfile` builds the web app and the relay into one small
 image that runs as a non-root user on port 7300:
 
 ```sh
-docker build -t caption-room .
-docker run -p 7300:7300 caption-room
+docker build -t saybeam .
+docker run -p 7300:7300 saybeam
 # with offline models: mount them and pass --models-dir
-docker run -p 7300:7300 -v ./relay/models:/models:ro caption-room \
+docker run -p 7300:7300 -v ./relay/models:/models:ro saybeam \
   --bind 0.0.0.0 --port 7300 --models-dir /models
 ```
 
@@ -239,7 +239,7 @@ Source layout (`relay/src`):
 
 ## License
 
-Caption Room, including this relay, is free software under the
+Saybeam, including this relay, is free software under the
 [GNU Affero General Public License v3.0 or later](../LICENSE)
 (`AGPL-3.0-or-later`). If you modify it and let other people use your version
 over a network, offer them your source code; see

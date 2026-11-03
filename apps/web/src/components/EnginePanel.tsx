@@ -145,7 +145,7 @@ export function EnginePanel({ config, onChange, caps, lang, recommendation, disa
       {config.kind === 'webspeech' && (
         <>
           {!caps?.webSpeech && <p class="warn">This browser has no built-in speech recognition. Use Chrome, Edge or Safari.</p>}
-          {caps?.iosStandalone && <p class="warn">iOS does not allow speech recognition in home-screen apps. Open Caption Room in Safari instead.</p>}
+          {caps?.iosStandalone && <p class="warn">iOS does not allow speech recognition in home-screen apps. Open Saybeam in Safari instead.</p>}
           <label class="field">
             <span>Language</span>
             <input type="text" value={config.lang} disabled={disabled} size={8} onInput={(e) => onChange({ ...config, lang: e.currentTarget.value.trim() || lang })} />

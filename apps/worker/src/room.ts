@@ -3,8 +3,8 @@
  * idle lecture costs almost nothing) and delegates every rule to RoomCore.
  */
 import { DurableObject } from 'cloudflare:workers';
-import { CLOSE, KEEPALIVE_PING, KEEPALIVE_PONG, LIMITS, type RoomStatus } from '@caption-room/protocol';
-import { RoomCore, countPresence, type ConnState, type InitRoomInput, type Outcome } from '@caption-room/protocol/room';
+import { CLOSE, KEEPALIVE_PING, KEEPALIVE_PONG, LIMITS, type RoomStatus } from '@saybeam/protocol';
+import { RoomCore, countPresence, type ConnState, type InitRoomInput, type Outcome } from '@saybeam/protocol/room';
 import { SqlRoomStore, hasSchema, migrate } from './sql-store';
 import type { Env } from './env';
 

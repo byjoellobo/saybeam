@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'preact/hooks';
-import { CLOSE, exportTranscript, formatRoomCode, type ExportFormat } from '@caption-room/protocol';
+import { CLOSE, exportTranscript, formatRoomCode, type ExportFormat } from '@saybeam/protocol';
 import { CaptionView } from '../components/CaptionView';
 import { DisplaySettings } from '../components/DisplaySettings';
 import { StatusPill } from '../components/StatusPill';
@@ -25,7 +25,7 @@ const FONT_STACKS: Record<ListenerPrefs['font'], string> = {
  */
 function useListenerToken(code: string): string | undefined {
   const read = useCallback((): string | undefined => {
-    const key = `caption-room:listen:${code}`;
+    const key = `saybeam:listen:${code}`;
     const k = new URLSearchParams(location.hash.slice(1)).get('k');
     try {
       if (k && k.length >= 16) {
@@ -56,7 +56,7 @@ export function Listener({ code }: ListenerProps) {
   useEffect(() => {
     if (snap.closeCode !== CLOSE.unauthorized) return;
     try {
-      localStorage.removeItem(`caption-room:listen:${code}`);
+      localStorage.removeItem(`saybeam:listen:${code}`);
     } catch {
       // ignore
     }

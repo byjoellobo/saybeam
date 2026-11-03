@@ -5,9 +5,9 @@
  */
 import type { EngineConfig } from '../engines/types';
 
-const ROOMS_KEY = 'caption-room:rooms';
-const LISTENER_KEY = 'caption-room:listener-prefs';
-const SPEAKER_KEY = 'caption-room:speaker-prefs';
+const ROOMS_KEY = 'saybeam:rooms';
+const LISTENER_KEY = 'saybeam:listener-prefs';
+const SPEAKER_KEY = 'saybeam:speaker-prefs';
 
 export interface SavedRoom {
   readonly code: string;
@@ -61,7 +61,7 @@ export function forgetRoom(code: string): void {
     listSavedRooms().filter((r) => r.code !== code),
   );
   try {
-    localStorage.removeItem(`caption-room:outbox:${code}`); // unsent captions for that room
+    localStorage.removeItem(`saybeam:outbox:${code}`); // unsent captions for that room
   } catch {
     // ignore
   }

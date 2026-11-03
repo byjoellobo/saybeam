@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { ServerInfo } from '@caption-room/protocol';
+import type { ServerInfo } from '@saybeam/protocol';
 import { fetchInfo } from '../lib/api';
 import { downloadText } from '../lib/browser';
 import { charErrorRate, parseEquivalences, wordErrorRate, type WerResult } from '../lib/wer';
@@ -169,7 +169,7 @@ export function Bench() {
       <header class="bench-head">
         <AppLink href="/" class="brand-small">
           <img src="/icons/icon.svg" alt="" width={28} height={28} />
-          <span>Caption Room</span>
+          <span>Saybeam</span>
         </AppLink>
         <h1>Field-test bench</h1>
         <p class="lede">
@@ -303,14 +303,14 @@ export function Bench() {
         <div class="row space-between wrap">
           <h2>Results ({results.length})</h2>
           <div class="row gap-sm wrap">
-            <button type="button" class="btn btn-small" disabled={!results.length} onClick={() => downloadText('caption-room-bench.csv', toCsv(results), 'text/csv')}>
+            <button type="button" class="btn btn-small" disabled={!results.length} onClick={() => downloadText('saybeam-bench.csv', toCsv(results), 'text/csv')}>
               Export CSV
             </button>
             <button
               type="button"
               class="btn btn-small"
               disabled={!results.length}
-              onClick={() => downloadText('caption-room-bench.json', JSON.stringify(results, null, 2), 'application/json')}
+              onClick={() => downloadText('saybeam-bench.json', JSON.stringify(results, null, 2), 'application/json')}
             >
               Export JSON
             </button>

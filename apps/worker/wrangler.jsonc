@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "caption-room",
+  "name": "saybeam",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-28",
   "upload_source_maps": true,

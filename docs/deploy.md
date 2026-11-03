@@ -1,6 +1,6 @@
-# Deploying Caption Room
+# Deploying Saybeam
 
-There are three ways to run Caption Room. Pick the one that fits the room:
+There are three ways to run Saybeam. Pick the one that fits the room:
 
 | Setup                                             | Good for                                          | Needs                                                    |
 | ------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------- |
@@ -28,7 +28,7 @@ npx wrangler login       # opens a browser to authorise Wrangler, once per machi
 npm run deploy           # builds apps/web, then deploys apps/worker with the app as static assets
 ```
 
-Wrangler prints the address, for example `https://caption-room.<your-subdomain>.workers.dev`. On a brand-new account it may first ask you to choose a `workers.dev` subdomain.
+Wrangler prints the address, for example `https://saybeam.<your-subdomain>.workers.dev`. On a brand-new account it may first ask you to choose a `workers.dev` subdomain.
 
 Check that it works:
 
@@ -72,18 +72,18 @@ Each WebSocket connection is also rate limited inside the room itself, whatever 
 
 ### The "Source code" link and the AGPL
 
-Caption Room is licensed under the AGPL-3.0-or-later. Section 13 of the licence says that if you **modify** Caption Room and let people use your modified version over a network, you must offer those users the source code of your version, for free.
+Saybeam is licensed under the AGPL-3.0-or-later. Section 13 of the licence says that if you **modify** Saybeam and let people use your modified version over a network, you must offer those users the source code of your version, for free.
 
-The app has a "Source code" link for exactly this. Its target is set when the web app is built, from the `CAPTION_ROOM_SOURCE_URL` environment variable. If you run unmodified code, you can leave it alone and the link points to this project. If you run a modified version, publish your changes (a public fork is easiest) and point the link at them:
+The app has a "Source code" link for exactly this. Its target is set when the web app is built, from the `SAYBEAM_SOURCE_URL` environment variable. If you run unmodified code, you can leave it alone and the link points to this project. If you run a modified version, publish your changes (a public fork is easiest) and point the link at them:
 
 ```bash
 # macOS, Linux, Git Bash
-CAPTION_ROOM_SOURCE_URL=https://github.com/your-name/caption-room npm run deploy
+SAYBEAM_SOURCE_URL=https://github.com/your-name/saybeam npm run deploy
 ```
 
 ```powershell
 # Windows PowerShell
-$env:CAPTION_ROOM_SOURCE_URL = "https://github.com/your-name/caption-room"
+$env:SAYBEAM_SOURCE_URL = "https://github.com/your-name/saybeam"
 npm run deploy
 ```
 
@@ -91,11 +91,11 @@ The variable is read at build time, so set it for whichever command builds the w
 
 ### Costs on the Workers Free plan
 
-Durable Objects are available on the Workers Free plan, as long as they use the SQLite storage backend. Caption Room does (`new_sqlite_classes` in `wrangler.jsonc`). Source: [Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/) and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/), both checked in October 2026. Prices change, so check those pages before you rely on the numbers below.
+Durable Objects are available on the Workers Free plan, as long as they use the SQLite storage backend. Saybeam does (`new_sqlite_classes` in `wrangler.jsonc`). Source: [Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/) and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/), both checked in October 2026. Prices change, so check those pages before you rely on the numbers below.
 
 What the Free plan includes each day (limits reset at 00:00 UTC):
 
-| What                    | Free allowance      | What uses it in Caption Room                                                                                                                                                         |
+| What                    | Free allowance      | What uses it in Saybeam                                                                                                                                                              |
 | ----------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Static assets           | Free and unlimited  | The web app itself: every page, script and font.                                                                                                                                     |
 | Worker requests         | 100,000 per day     | API calls and WebSocket connections: a few per person joining or reconnecting.                                                                                                       |
@@ -111,7 +111,7 @@ On the Free plan, when a daily limit is reached, further operations of that type
 
 ## WhisperLive for big events
 
-For a conference or a large service you may want the best accuracy you can get, and to take the work off the speaker's laptop. [collabora/WhisperLive](https://github.com/collabora/WhisperLive) runs Whisper on a GPU server and streams results back in real time. Caption Room's "WhisperLive server" engine connects to it directly from the speaker's browser; listeners and the room server are unchanged.
+For a conference or a large service you may want the best accuracy you can get, and to take the work off the speaker's laptop. [collabora/WhisperLive](https://github.com/collabora/WhisperLive) runs Whisper on a GPU server and streams results back in real time. Saybeam's "WhisperLive server" engine connects to it directly from the speaker's browser; listeners and the room server are unchanged.
 
 You need a Linux server with an NVIDIA GPU, the NVIDIA driver, Docker, and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) (it makes `--gpus` work). A CPU-only image exists too, but is too slow for live captions with larger models.
 
@@ -126,7 +126,7 @@ docker run -it --gpus all -p 9090:9090 ghcr.io/collabora/whisperlive-gpu:latest
 For an event, run it in the background with an API key, a cache for downloaded models, and the port open only to the proxy on the same machine:
 
 ```bash
-export WHISPERLIVE_KEY="$(openssl rand -hex 24)"     # keep this; the speaker types it into Caption Room
+export WHISPERLIVE_KEY="$(openssl rand -hex 24)"     # keep this; the speaker types it into Saybeam
 
 docker run -d --name whisperlive --restart unless-stopped \
   --gpus all \
@@ -138,10 +138,10 @@ docker run -d --name whisperlive --restart unless-stopped \
 ```
 
 - The image's default command is `python run_server.py`, so anything after the image name replaces it with your own flags.
-- `--max_clients` (default 4) is how many speakers can use the server at once. Each Caption Room speaker uses one connection.
-- `--max_connection_time` is how long, in seconds, the server keeps one connection open. **The default is 300 seconds** (5 minutes; some parts of the WhisperLive README say 600). Caption Room reconnects by itself when the server closes the connection and does not lose words, so the default works. A longer value, such as an hour, just means fewer reconnects.
-- `--api_key` makes the server refuse connections without the key. Caption Room sends the key in the WebSocket handshake when you fill in the "API key" field. API key support arrived in WhisperLive 0.10.0.
-- The model is chosen by the speaker in Caption Room (`small` by default; `large-v3-turbo` is a good choice on a strong GPU). The server downloads each model the first time it is used, so connect once before the event starts.
+- `--max_clients` (default 4) is how many speakers can use the server at once. Each Saybeam speaker uses one connection.
+- `--max_connection_time` is how long, in seconds, the server keeps one connection open. **The default is 300 seconds** (5 minutes; some parts of the WhisperLive README say 600). Saybeam reconnects by itself when the server closes the connection and does not lose words, so the default works. A longer value, such as an hour, just means fewer reconnects.
+- `--api_key` makes the server refuse connections without the key. Saybeam sends the key in the WebSocket handshake when you fill in the "API key" field. API key support arrived in WhisperLive 0.10.0.
+- The model is chosen by the speaker in Saybeam (`small` by default; `large-v3-turbo` is a good choice on a strong GPU). The server downloads each model the first time it is used, so connect once before the event starts.
 
 ### Put it behind HTTPS (wss://)
 
@@ -158,9 +158,9 @@ Browsers refuse unencrypted `ws://` connections from a page served over HTTPS, w
 
 3. Start Caddy (`sudo systemctl reload caddy` if you installed the package, or `caddy run` in the folder with the Caddyfile).
 
-Reloading Caddy's configuration closes open WebSocket connections; Caption Room reconnects automatically.
+Reloading Caddy's configuration closes open WebSocket connections; Saybeam reconnects automatically.
 
-### Connect Caption Room
+### Connect Saybeam
 
 In the speaker console, choose **WhisperLive server** and enter:
 
@@ -181,7 +181,7 @@ In short:
 npm install && npm run build                              # build the web app
 node scripts/fetch-models.mjs                             # optional: models for fully offline use
 cargo build --release --manifest-path relay/Cargo.toml    # the relay embeds the web app
-./relay/target/release/caption-room-relay --models-dir relay/models
+./relay/target/release/saybeam-relay --models-dir relay/models
 ```
 
 The relay prints the audience address and a QR code. The teacher opens `http://localhost:7300` on the laptop itself (browsers only allow the microphone on `localhost` or HTTPS), and students scan the QR code.

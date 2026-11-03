@@ -1,6 +1,6 @@
 # Architecture
 
-This page is for new contributors. It explains the moving parts of Caption Room, how a spoken word becomes a caption on a phone, and where to start reading the code. The wire protocol itself is specified in [protocol.md](protocol.md).
+This page is for new contributors. It explains the moving parts of Saybeam, how a spoken word becomes a caption on a phone, and where to start reading the code. The wire protocol itself is specified in [protocol.md](protocol.md).
 
 ## Components
 

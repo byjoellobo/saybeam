@@ -18,7 +18,7 @@ import {
   type Role,
   type RoomView,
   type ServerMsg,
-} from '@caption-room/protocol';
+} from '@saybeam/protocol';
 
 export type ConnectionState = 'idle' | 'connecting' | 'open' | 'reconnecting' | 'closed';
 
@@ -136,7 +136,7 @@ export class RoomClient {
     this.now = opts.now ?? Date.now;
     this.random = opts.random ?? Math.random;
     this.timers = opts.timers ?? browserTimers;
-    this.outboxKey = `caption-room:outbox:${opts.code}`;
+    this.outboxKey = `saybeam:outbox:${opts.code}`;
     this.state = { view: EMPTY_VIEW, connection: 'idle', closeReason: null, closeCode: null, pending: this.loadOutbox(), rttMs: null, rotation: null };
   }
 

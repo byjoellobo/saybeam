@@ -1,4 +1,4 @@
-//! Wire types for the Caption Room protocol, version 1.
+//! Wire types for the Saybeam protocol, version 1.
 //!
 //! Mirrors `packages/protocol/src/messages.ts`. Field names are camelCase on
 //! the wire and optional fields are omitted when absent, exactly like the

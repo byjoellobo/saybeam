@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'preact/hooks';
-import { formatRoomCode } from '@caption-room/protocol';
+import { formatRoomCode } from '@saybeam/protocol';
 import { copyText, qrSvg } from '../lib/browser';
 
 interface QrShareProps {

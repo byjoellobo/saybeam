@@ -1,19 +1,19 @@
 [package]
-name = "caption-room-relay"
+name = "saybeam-relay"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
-description = "Caption Room LAN relay: live captions over school Wi-Fi with no internet needed"
+description = "Saybeam LAN relay: live captions over school Wi-Fi with no internet needed"
 license = "AGPL-3.0-or-later"
-repository = "https://github.com/mezpos/caption-room"
+repository = "https://github.com/byjoellobo/saybeam"
 publish = false
 
 [lib]
-name = "caption_room_relay"
+name = "saybeam_relay"
 path = "src/lib.rs"
 
 [[bin]]
-name = "caption-room-relay"
+name = "saybeam-relay"
 path = "src/main.rs"
 
 [dependencies]

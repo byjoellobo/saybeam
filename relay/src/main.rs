@@ -1,4 +1,4 @@
-//! `caption-room-relay` binary: parse flags, print the banner, serve.
+//! `saybeam-relay` binary: parse flags, print the banner, serve.
 
 use std::future::IntoFuture;
 use std::net::SocketAddr;
@@ -8,12 +8,12 @@ use std::process::ExitCode;
 use clap::Parser;
 use tracing_subscriber::EnvFilter;
 
-use caption_room_relay::banner::{self, BannerInfo};
-use caption_room_relay::cli::Cli;
-use caption_room_relay::http::{ServerConfig, build_app, spawn_evictor};
-use caption_room_relay::hub::HubSettings;
-use caption_room_relay::net;
-use caption_room_relay::web::WebSource;
+use saybeam_relay::banner::{self, BannerInfo};
+use saybeam_relay::cli::Cli;
+use saybeam_relay::http::{ServerConfig, build_app, spawn_evictor};
+use saybeam_relay::hub::HubSettings;
+use saybeam_relay::net;
+use saybeam_relay::web::WebSource;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -21,7 +21,7 @@ async fn main() -> ExitCode {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("caption_room_relay=info")),
+                .unwrap_or_else(|_| EnvFilter::new("saybeam_relay=info")),
         )
         .with_target(false)
         .init();

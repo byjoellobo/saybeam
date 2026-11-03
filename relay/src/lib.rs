@@ -1,4 +1,4 @@
-//! Caption Room LAN relay.
+//! Saybeam LAN relay.
 //!
 //! A small server for a teacher's laptop that speaks the same wire protocol as
 //! the cloud Durable Object (see `docs/protocol.md`), so the web app works on a

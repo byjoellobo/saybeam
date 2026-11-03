@@ -1,4 +1,4 @@
-import type { RoomStatus } from '@caption-room/protocol';
+import type { RoomStatus } from '@saybeam/protocol';
 import type { ConnectionState } from '../lib/room-client';
 
 interface StatusPillProps {

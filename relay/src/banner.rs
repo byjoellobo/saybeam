@@ -27,7 +27,7 @@ pub fn render(info: &BannerInfo<'_>) -> String {
     let mut out = String::new();
     let port = info.port;
     let _ = writeln!(out);
-    let _ = writeln!(out, "  Caption Room LAN relay v{}", info.version);
+    let _ = writeln!(out, "  Saybeam LAN relay v{}", info.version);
     let _ = writeln!(out);
     let _ = writeln!(
         out,

@@ -1,7 +1,7 @@
 # Third-party licenses
 
-Crates compiled into the `caption-room-relay` release binary (normal dependencies only;
-test and build-time tools are not shipped). Caption Room itself is licensed under
+Crates compiled into the `saybeam-relay` release binary (normal dependencies only;
+test and build-time tools are not shipped). Saybeam itself is licensed under
 AGPL-3.0-or-later; every crate below is under a license compatible with it unless listed
 under "Needs review".
 

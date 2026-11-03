@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { FinalMsg, PartialCaption, Segment } from '@caption-room/protocol';
-import { formatTimestamp } from '@caption-room/protocol';
+import type { FinalMsg, PartialCaption, Segment } from '@saybeam/protocol';
+import { formatTimestamp } from '@saybeam/protocol';
 
 interface TranscriptEditorProps {
   readonly segments: readonly Segment[];

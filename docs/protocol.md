@@ -1,4 +1,4 @@
-# Caption Room wire protocol (v1)
+# Saybeam wire protocol (v1)
 
 Two servers implement this protocol and must stay identical from a client's point of view:
 

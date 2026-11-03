@@ -36,7 +36,7 @@ test('@screenshots README images', async ({ browser, request, baseURL }) => {
   const desktop = await browser.newContext({ viewport: { width: 1280, height: 820 }, deviceScaleFactor: 1 });
   const console = await desktop.newPage();
   await console.addInitScript((r) => {
-    localStorage.setItem('caption-room:rooms', JSON.stringify([{ ...r, title: 'Physics 11B: how sound travels', createdAt: Date.now() }]));
+    localStorage.setItem('saybeam:rooms', JSON.stringify([{ ...r, title: 'Physics 11B: how sound travels', createdAt: Date.now() }]));
   }, room);
   await console.goto(`/speak/${room.code}`);
   await expect(console.getByText('343 metres per second')).toBeVisible();

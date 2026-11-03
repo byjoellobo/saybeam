@@ -1,11 +1,11 @@
-# Caption Room
+# Saybeam
 
-[![CI](https://github.com/mezpos/caption-room/actions/workflows/ci.yml/badge.svg)](https://github.com/mezpos/caption-room/actions/workflows/ci.yml)
+[![CI](https://github.com/byjoellobo/saybeam/actions/workflows/ci.yml/badge.svg)](https://github.com/byjoellobo/saybeam/actions/workflows/ci.yml)
 [![License: AGPL v3+](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue.svg)](LICENSE)
 
 **Free, open live captions that everyone in the room can follow on their own phone.**
 
-A speaker opens Caption Room on a laptop or phone and starts talking. Their device turns speech into text, and every listener who scans the QR code (or types a six-character room code) sees the captions live. Each listener picks their own text size and colours, and can scroll back or jump to the latest line. A helper can correct mistakes as they happen, and the speaker can download the transcript afterwards.
+A speaker opens Saybeam on a laptop or phone and starts talking. Their device turns speech into text, and every listener who scans the QR code (or types a six-character room code) sees the captions live. Each listener picks their own text size and colours, and can scroll back or jump to the latest line. A helper can correct mistakes as they happen, and the speaker can download the transcript afterwards.
 
 It runs in the cloud (one Cloudflare Durable Object per room), on your own server, or with no internet at all through a small relay on the teacher's laptop.
 
@@ -63,12 +63,12 @@ The audience is everywhere there is a room: lecture halls, places of worship, co
 
 ## Run it
 
-| You want to...                         | Do this                                                                                                                                                    |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Try it on the web                      | Deploy to Cloudflare (below), or open a hosted instance if someone runs one for you                                                                        |
-| Caption a classroom with weak internet | Download the relay for Windows, macOS or Linux from [Releases](https://github.com/mezpos/caption-room/releases) and see [relay/README.md](relay/README.md) |
-| Host it on your own server             | `docker run -p 7300:7300 ghcr.io/mezpos/caption-room` behind HTTPS: see [docs/self-hosting.md](docs/self-hosting.md)                                       |
-| Develop                                | See [Quick start](#quick-start) and [CONTRIBUTING.md](CONTRIBUTING.md)                                                                                     |
+| You want to...                         | Do this                                                                                                                                                   |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Try it on the web                      | Deploy to Cloudflare (below), or open a hosted instance if someone runs one for you                                                                       |
+| Caption a classroom with weak internet | Download the relay for Windows, macOS or Linux from [Releases](https://github.com/byjoellobo/saybeam/releases) and see [relay/README.md](relay/README.md) |
+| Host it on your own server             | `docker run -p 7300:7300 ghcr.io/byjoellobo/saybeam` behind HTTPS: see [docs/self-hosting.md](docs/self-hosting.md)                                       |
+| Develop                                | See [Quick start](#quick-start) and [CONTRIBUTING.md](CONTRIBUTING.md)                                                                                    |
 
 ### Quick start
 
@@ -97,7 +97,7 @@ npm run deploy           # builds apps/web and deploys apps/worker with the PWA 
 
 Durable Objects with SQLite storage are available on the Workers Free plan. Rooms delete themselves 24 hours after the last caption (72 hours at most). Details, custom domains and costs: [docs/deploy.md](docs/deploy.md).
 
-If you deploy a **modified** version, set `CAPTION_ROOM_SOURCE_URL` to your repository when building, so the app's "Source code" link points at your changes (the AGPL requires this).
+If you deploy a **modified** version, set `SAYBEAM_SOURCE_URL` to your repository when building, so the app's "Source code" link points at your changes (the AGPL requires this).
 
 ### LAN mode (no internet needed)
 
@@ -107,7 +107,7 @@ On the teacher's laptop, either download a release, or build it:
 npm install && npm run build                      # build the web app (embedded into the relay)
 node scripts/fetch-models.mjs                     # optional: models for fully offline use (about 400 MB)
 cargo build --release --manifest-path relay/Cargo.toml
-./relay/target/release/caption-room-relay --models-dir relay/models
+./relay/target/release/saybeam-relay --models-dir relay/models
 ```
 
 - The relay prints the audience address and a QR code.
@@ -202,7 +202,7 @@ Contributions of every kind are welcome: code, documentation, accessibility revi
 
 ## License
 
-Caption Room is free software: you can redistribute it and/or modify it under the terms of the **GNU Affero General Public License, version 3 or later** ([LICENSE](LICENSE)). If you run a modified version for other people over a network, you must offer them its source code. Contributions are accepted under the same license with a [DCO](https://developercertificate.org/) sign-off.
+Saybeam is free software: you can redistribute it and/or modify it under the terms of the **GNU Affero General Public License, version 3 or later** ([LICENSE](LICENSE)). If you run a modified version for other people over a network, you must offer them its source code. Contributions are accepted under the same license with a [DCO](https://developercertificate.org/) sign-off.
 
 Third-party components are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) (web app and Worker) and [relay/THIRD_PARTY_LICENSES.md](relay/THIRD_PARTY_LICENSES.md) (relay). Built on transformers.js and ONNX Runtime (Apache 2.0), Moonshine and Whisper models (MIT), Silero VAD (MIT), Preact (MIT), and the Atkinson Hyperlegible typeface by the Braille Institute (SIL OFL). The voice-activity thresholds follow the transformers.js `moonshine-web` example (Apache 2.0).
 

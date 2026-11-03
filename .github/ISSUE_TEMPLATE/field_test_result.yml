@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for testing. These results decide which speech engine Caption Room suggests on each kind of device and for each accent. The method and the pass and fail thresholds are in [docs/risk-tests.md](https://github.com/mezpos/caption-room/blob/main/docs/risk-tests.md).
+        Thank you for testing. These results decide which speech engine Saybeam suggests on each kind of device and for each accent. The method and the pass and fail thresholds are in [docs/risk-tests.md](https://github.com/byjoellobo/saybeam/blob/main/docs/risk-tests.md).
 
         **How to get the numbers:** open `/bench` on the device you are testing, run "Transcribe an audio file" or "Record and read aloud", then use **Export CSV**. One issue per device is ideal; paste every run from that device into the CSV box below.
 

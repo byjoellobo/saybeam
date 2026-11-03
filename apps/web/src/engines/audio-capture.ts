@@ -31,7 +31,7 @@ export async function startCapture(onChunk: (samples: Float32Array, sampleRate: 
   try {
     await ctx.audioWorklet.addModule('/audio/capture-worklet.js');
     const source = ctx.createMediaStreamSource(stream);
-    const node = new AudioWorkletNode(ctx, 'caption-room-capture', {
+    const node = new AudioWorkletNode(ctx, 'saybeam-capture', {
       numberOfInputs: 1,
       numberOfOutputs: 0,
       channelCount: 1,

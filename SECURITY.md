@@ -1,6 +1,6 @@
 # Security policy
 
-Caption Room carries what people say in classrooms, places of worship and meetings, so we take security reports seriously. Thank you for helping keep it safe.
+Saybeam carries what people say in classrooms, places of worship and meetings, so we take security reports seriously. Thank you for helping keep it safe.
 
 ## Supported versions
 
@@ -17,7 +17,7 @@ Caption Room carries what people say in classrooms, places of worship and meetin
 Report them privately through GitHub:
 
 1. Go to the repository's **Security** tab.
-2. Choose **Report a vulnerability**. The direct link is https://github.com/mezpos/caption-room/security/advisories/new
+2. Choose **Report a vulnerability**. The direct link is https://github.com/byjoellobo/saybeam/security/advisories/new
 3. Fill in the form. Only you and the maintainers can see the report.
 
 You need a GitHub account. If you cannot use GitHub private reporting, open a public issue that says only "I have a security report, please give me a private channel", with no details, and a maintainer will follow up.
@@ -36,7 +36,7 @@ Please test only against your own deployment or a local server, never against ro
 
 - **Acknowledgement within 5 working days.**
 - An initial assessment, and a severity, as soon as we can, usually within two weeks.
-- A fix on a best-effort basis. We aim to fix serious problems within 30 days, and sooner when a problem is being exploited. Caption Room is maintained by volunteers, so these are goals, not guarantees. We will keep you updated either way.
+- A fix on a best-effort basis. We aim to fix serious problems within 30 days, and sooner when a problem is being exploited. Saybeam is maintained by volunteers, so these are goals, not guarantees. We will keep you updated either way.
 - When the fix is released, we publish a GitHub security advisory and credit you, unless you prefer to stay anonymous. Please keep the details private until then.
 
 ## Scope
@@ -59,7 +59,7 @@ Please test only against your own deployment or a local server, never against ro
 - Attacks that need a compromised device, a malicious browser extension, or physical access to an unlocked speaker device.
 - Plain volumetric denial of service, and reports from automated scanners with no demonstrated impact.
 
-## How Caption Room protects rooms
+## How Saybeam protects rooms
 
 A short summary. [docs/architecture.md](docs/architecture.md) and [docs/protocol.md](docs/protocol.md) have the details.
 
@@ -86,4 +86,4 @@ A short summary. [docs/architecture.md](docs/architecture.md) and [docs/protocol
 - With the "Browser speech" engine, audio goes to the browser vendor's speech service (unless Chrome's on-device mode is on). With WhisperLive, audio goes to that server. On-device models keep audio on the speaker's device.
 - Anyone who has a link can share it further. Rotate a link if it leaks.
 
-Caption Room is not designed for confidential meetings. Do not use it for conversations that must stay secret.
+Saybeam is not designed for confidential meetings. Do not use it for conversations that must stay secret.

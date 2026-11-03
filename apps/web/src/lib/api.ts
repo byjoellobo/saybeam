@@ -1,4 +1,4 @@
-import type { CreateRoomRequest, CreateRoomResponse, RoomStatus, ServerInfo } from '@caption-room/protocol';
+import type { CreateRoomRequest, CreateRoomResponse, RoomStatus, ServerInfo } from '@saybeam/protocol';
 
 const TIMEOUT_MS = 12_000;
 
@@ -16,7 +16,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     res = await fetch(path, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS), headers: { 'content-type': 'application/json', ...init.headers } });
   } catch {
-    throw new ApiError('Could not reach the Caption Room server. Check your connection and try again.', 0);
+    throw new ApiError('Could not reach the Saybeam server. Check your connection and try again.', 0);
   }
   let body: unknown = null;
   try {

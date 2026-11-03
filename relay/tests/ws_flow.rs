@@ -12,9 +12,9 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 
-use caption_room_relay::http::{ServerConfig, build_app};
-use caption_room_relay::hub::HubSettings;
-use caption_room_relay::web::WebSource;
+use saybeam_relay::http::{ServerConfig, build_app};
+use saybeam_relay::hub::HubSettings;
+use saybeam_relay::web::WebSource;
 
 type Ws = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
@@ -23,11 +23,11 @@ const WAIT: Duration = Duration::from_secs(3);
 /// A throwaway web root so static-file checks do not depend on `npm run build`.
 fn web_root(name: &str) -> PathBuf {
     let dir =
-        std::env::temp_dir().join(format!("caption-room-relay-{name}-{}", std::process::id()));
+        std::env::temp_dir().join(format!("saybeam-relay-{name}-{}", std::process::id()));
     std::fs::create_dir_all(dir.join("assets")).expect("temp web root");
     std::fs::write(
         dir.join("index.html"),
-        "<!doctype html><title>Caption Room</title>",
+        "<!doctype html><title>Saybeam</title>",
     )
     .expect("index");
     std::fs::write(dir.join("assets").join("app-abc123.js"), "export {}").expect("asset");
@@ -477,7 +477,7 @@ async fn http_routes_validation_and_headers() {
     }
     let index = http(addr, "GET", "/", "").await;
     assert_eq!(index.header("cache-control").as_deref(), Some("no-cache"));
-    assert!(index.body.contains("Caption Room"));
+    assert!(index.body.contains("Saybeam"));
     let asset = http(addr, "GET", "/assets/app-abc123.js", "").await;
     assert!(
         asset
@@ -494,7 +494,7 @@ async fn http_routes_validation_and_headers() {
     for path in ["/%2e%2e/Cargo.toml", "/CON", "/aux.js"] {
         let res = http(addr, "GET", path, "").await;
         assert!(
-            res.body.contains("Caption Room"),
+            res.body.contains("Saybeam"),
             "{path} falls back to the app"
         );
     }
@@ -507,7 +507,7 @@ async fn http_routes_validation_and_headers() {
 #[tokio::test]
 async fn serves_models_with_resource_policy() {
     let models =
-        std::env::temp_dir().join(format!("caption-room-relay-models-{}", std::process::id()));
+        std::env::temp_dir().join(format!("saybeam-relay-models-{}", std::process::id()));
     std::fs::create_dir_all(&models).expect("models dir");
     std::fs::write(models.join("tiny.onnx"), b"\x08\x01model").expect("model file");
     let config = ServerConfig {

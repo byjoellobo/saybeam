@@ -73,7 +73,7 @@ describe('storage', () => {
     expect(getSavedRoom('AAAAAA')?.speakerToken).toBe('s1b');
     forgetRoom('AAAAAA');
     expect(getSavedRoom('AAAAAA')).toBeNull();
-    localStorage.setItem('caption-room:rooms', '{bad json');
+    localStorage.setItem('saybeam:rooms', '{bad json');
     expect(listSavedRooms()).toEqual([]);
   });
 
@@ -84,21 +84,21 @@ describe('storage', () => {
 
     expect(loadSpeakerPrefs()).toEqual(DEFAULT_SPEAKER_PREFS);
     saveSpeakerPrefs({ ...DEFAULT_SPEAKER_PREFS, replacements: 'a => b', engine: { kind: 'whisperlive', url: 'ws://x:9090', model: 'small', language: 'en', apiKey: 'secret' } });
-    expect(localStorage.getItem('caption-room:speaker-prefs')).not.toContain('secret');
+    expect(localStorage.getItem('saybeam:speaker-prefs')).not.toContain('secret');
     expect(loadSpeakerPrefs().engine).toMatchObject({ kind: 'whisperlive', url: 'ws://x:9090' });
 
     saveSpeakerPrefs({ ...DEFAULT_SPEAKER_PREFS, engine: { kind: 'local', modelId: 'moonshine-tiny', device: 'wasm', language: null, partials: false, micId: 'm1' } });
     expect(loadSpeakerPrefs().engine).toMatchObject({ kind: 'local', device: 'wasm', partials: false, micId: 'm1' });
     saveSpeakerPrefs({ ...DEFAULT_SPEAKER_PREFS, engine: { kind: 'webspeech', lang: 'hi-IN', onDevice: true, phrases: ['IIT'] } });
     expect(loadSpeakerPrefs().engine).toMatchObject({ kind: 'webspeech', lang: 'hi-IN', onDevice: true, phrases: ['IIT'] });
-    localStorage.setItem('caption-room:speaker-prefs', JSON.stringify({ engine: { kind: 'evil' }, replacements: 7 }));
+    localStorage.setItem('saybeam:speaker-prefs', JSON.stringify({ engine: { kind: 'evil' }, replacements: 7 }));
     expect(loadSpeakerPrefs()).toEqual(DEFAULT_SPEAKER_PREFS);
   });
 
   it('stores bench results and ignores corrupt data', () => {
     storeResults([{ id: 'r1' } as BenchResult]);
     expect(loadResults().map((r) => r.id)).toEqual(['r1']);
-    localStorage.setItem('caption-room:bench-results', 'nope');
+    localStorage.setItem('saybeam:bench-results', 'nope');
     expect(loadResults()).toEqual([]);
   });
 });

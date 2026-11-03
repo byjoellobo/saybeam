@@ -5,7 +5,7 @@ The v1 brief names two risks that the background research did not measure:
 1. **Latency on low-end speaker devices.** Can a cheap phone or an old school laptop run speech recognition fast enough for live captions?
 2. **Accuracy on Indian-accented and code-mixed English.** How often are the words wrong when the speaker has an Indian accent or mixes Hindi and English?
 
-This plan gives each risk a method, the tools already built into Caption Room, pass and fail thresholds, and a day-by-day schedule. Everything runs from the **field-test bench** at `/bench`, which stores results in the browser and exports CSV or JSON for analysis.
+This plan gives each risk a method, the tools already built into Saybeam, pass and fail thresholds, and a day-by-day schedule. Everything runs from the **field-test bench** at `/bench`, which stores results in the browser and exports CSV or JSON for analysis.
 
 ## Tools in this repo
 

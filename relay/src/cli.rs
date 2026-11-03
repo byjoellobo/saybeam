@@ -5,12 +5,12 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-/// Caption Room LAN relay: live captions over school Wi-Fi, no internet needed.
+/// Saybeam LAN relay: live captions over school Wi-Fi, no internet needed.
 ///
 /// The speaker opens http://localhost:PORT on this laptop; students open the
 /// LAN address printed at startup (or scan its QR code).
 #[derive(Debug, Parser)]
-#[command(name = "caption-room-relay", version, about, long_about)]
+#[command(name = "saybeam-relay", version, about, long_about)]
 pub struct Cli {
     /// TCP port to listen on.
     #[arg(long, default_value_t = 7300)]

@@ -3,7 +3,7 @@
  * engine utterance keys to globally unique segment ids, and puts timings on
  * the room's timeline (ms since the room was created) for SRT/VTT export.
  */
-import type { FinalMsg } from '@caption-room/protocol';
+import type { FinalMsg } from '@saybeam/protocol';
 import type { CompiledReplacements } from './replacements';
 import type { FinalTiming } from '../engines/types';
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'preact/hooks';
-import { formatRoomCode } from '@caption-room/protocol';
+import { formatRoomCode } from '@saybeam/protocol';
 import { useRoom } from '../lib/use-room';
 import { StatusPill } from '../components/StatusPill';
 import { TranscriptEditor } from '../components/TranscriptEditor';
@@ -11,7 +11,7 @@ interface CorrectorProps {
 /** The token arrives in the URL fragment (never sent to servers); keep it for this tab only. */
 function useCorrectorToken(code: string): string | null {
   return useMemo(() => {
-    const key = `caption-room:corrector:${code}`;
+    const key = `saybeam:corrector:${code}`;
     const fromHash = location.hash.slice(1);
     if (fromHash.length >= 16) {
       sessionStorage.setItem(key, fromHash);
@@ -27,7 +27,7 @@ export function Corrector({ code }: CorrectorProps) {
   const { view } = snap;
 
   useEffect(() => {
-    document.title = `Correcting ${formatRoomCode(code)}, Caption Room`;
+    document.title = `Correcting ${formatRoomCode(code)}, Saybeam`;
   }, [code]);
 
   if (!token) {

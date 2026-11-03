@@ -1,9 +1,9 @@
 {
-  "name": "@caption-room/protocol",
+  "name": "@saybeam/protocol",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Wire protocol, room logic and transcript formats shared by the Caption Room web app, Cloudflare Worker and LAN relay.",
+  "description": "Wire protocol, room logic and transcript formats shared by the Saybeam web app, Cloudflare Worker and LAN relay.",
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",

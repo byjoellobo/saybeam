@@ -1,21 +1,21 @@
 name: Bug report
-description: Something in Caption Room is broken or does not work as described.
+description: Something in Saybeam is broken or does not work as described.
 title: "[Bug]: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a problem. Please search the [open issues](https://github.com/mezpos/caption-room/issues) first, in case someone has already reported it.
+        Thanks for taking the time to report a problem. Please search the [open issues](https://github.com/byjoellobo/saybeam/issues) first, in case someone has already reported it.
 
-        **Is it a security problem?** Please do not file it here. Report it privately instead, as described in [SECURITY.md](https://github.com/mezpos/caption-room/blob/main/SECURITY.md).
+        **Is it a security problem?** Please do not file it here. Report it privately instead, as described in [SECURITY.md](https://github.com/byjoellobo/saybeam/blob/main/SECURITY.md).
 
         **Do not paste room codes or links.** Speaker, corrector, hand-off and private-room links (anything with `#` in it) are keys to the room. Replace them with `CODE` or `LINK`.
 
   - type: dropdown
     id: area
     attributes:
-      label: Which part of Caption Room?
+      label: Which part of Saybeam?
       options:
         - Speaker console (/speak)
         - Listener view (/r)
@@ -105,7 +105,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Caption Room version or commit
+      label: Saybeam version or commit
       description: The `version` field of `/api/info` on your server, or the commit you built from.
       placeholder: "Example: 0.1.0"
     validations:

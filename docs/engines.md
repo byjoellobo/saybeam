@@ -1,6 +1,6 @@
 # Choosing a speech engine
 
-Caption Room turns speech into text on the speaker's side, using one of several engines. The speaker console suggests one based on what the device can do and the room's spoken language, and you can change it at any time before you start. This page explains the choices.
+Saybeam turns speech into text on the speaker's side, using one of several engines. The speaker console suggests one based on what the device can do and the room's spoken language, and you can change it at any time before you start. This page explains the choices.
 
 ## The engines
 
@@ -103,12 +103,12 @@ Changes take effect the next time you press start.
 
 ## Known browser speech quirks
 
-The Web Speech API behaves differently in each browser. Caption Room works around what it can:
+The Web Speech API behaves differently in each browser. Saybeam works around what it can:
 
-- **Sessions stop on their own.** Browsers end a recognition session after a pause or after a while. Caption Room restarts it immediately, as Web Captioner did, and keeps any words that were still in progress. Once in a while a word spoken exactly during a restart can be missed.
-- **Android Chrome and continuous mode.** Continuous recognition on Android is less reliable than on desktop: sessions end more often, and Chrome sometimes delivers the previous final result again, word for word. Caption Room ignores an identical final that arrives within 1.5 seconds on Android only (elsewhere, a repeat is real speech).
-- **iPhone and iPad home-screen apps cannot use speech recognition.** iOS does not allow it in web apps added to the home screen. Open Caption Room in Safari itself, or use an on-device model. The suggestion does this automatically.
+- **Sessions stop on their own.** Browsers end a recognition session after a pause or after a while. Saybeam restarts it immediately, as Web Captioner did, and keeps any words that were still in progress. Once in a while a word spoken exactly during a restart can be missed.
+- **Android Chrome and continuous mode.** Continuous recognition on Android is less reliable than on desktop: sessions end more often, and Chrome sometimes delivers the previous final result again, word for word. Saybeam ignores an identical final that arrives within 1.5 seconds on Android only (elsewhere, a repeat is real speech).
+- **iPhone and iPad home-screen apps cannot use speech recognition.** iOS does not allow it in web apps added to the home screen. Open Saybeam in Safari itself, or use an on-device model. The suggestion does this automatically.
 - **Firefox does not currently offer speech recognition to websites.** Use an on-device model in Firefox, or Chrome, Edge or Safari for browser speech.
-- **The cloud service needs a steady connection.** On a network hiccup the status shows "reconnecting to the speech service", and Caption Room retries with increasing waits of up to 10 seconds.
+- **The cloud service needs a steady connection.** On a network hiccup the status shows "reconnecting to the speech service", and Saybeam retries with increasing waits of up to 10 seconds.
 - **On-device mode** is only offered on desktop browsers that support it (Chrome 139 or later), never on phones. The language pack downloads when you click "Download language pack" (Chrome only allows that from a click), and not every language has one.
 - **Timings are estimates.** Browser speech gives no timestamps, so subtitle times in SRT and WebVTT exports are estimated from when the words first appeared.

@@ -61,7 +61,7 @@ writeFileSync(
   [
     '# Third-party notices',
     '',
-    'Caption Room is licensed under the GNU AGPL v3 or later (see LICENSE). The web app and Cloudflare Worker builds include the open-source packages below.',
+    'Saybeam is licensed under the GNU AGPL v3 or later (see LICENSE). The web app and Cloudflare Worker builds include the open-source packages below.',
     'Speech models (Moonshine, Whisper, Silero VAD) and the ONNX Runtime WebAssembly files are downloaded at run time and are not part of the build; they are MIT licensed.',
     'Rust crates compiled into the LAN relay are listed in relay/THIRD_PARTY_LICENSES.md.',
     '',

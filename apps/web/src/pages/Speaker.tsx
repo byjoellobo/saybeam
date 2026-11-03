@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { exportTranscript, formatRoomCode, type ExportFormat, type ServerInfo } from '@caption-room/protocol';
+import { exportTranscript, formatRoomCode, type ExportFormat, type ServerInfo } from '@saybeam/protocol';
 import { useRoom } from '../lib/use-room';
 import { fetchInfo, publicBase } from '../lib/api';
 import { CaptionPipeline, type LocalPartial } from '../lib/caption-pipeline';
@@ -106,7 +106,7 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
   }, [config, recommendation]);
 
   useEffect(() => {
-    document.title = `Speaker ${formatRoomCode(code)}, Caption Room`;
+    document.title = `Speaker ${formatRoomCode(code)}, Saybeam`;
   }, [code]);
 
   const replacements = useMemo(() => compileReplacements(parseReplacements(prefs.replacements)), [prefs.replacements]);
@@ -279,7 +279,7 @@ function SpeakerConsole({ code, room: initialRoom }: { readonly code: string; re
           }}
         >
           <img src="/icons/icon.svg" alt="" width={28} height={28} />
-          <span>Caption Room</span>
+          <span>Saybeam</span>
         </a>
         <span class="room-code-small">{formatRoomCode(code)}</span>
         <StatusPill connection={snap.connection} status={view.status} liveLabel={running ? 'Captioning' : 'Connected'} />

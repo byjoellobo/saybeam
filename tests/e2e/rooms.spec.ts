@@ -3,7 +3,7 @@ import { createRoom, expect, expectAccessible, ScriptedClient, test } from './he
 test.describe('starting a room', () => {
   test('home page is accessible and creates a room with a QR code', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Caption Room' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Saybeam' })).toBeVisible();
     await expectAccessible(page, 'home page');
 
     await page.getByLabel('Session name (optional)').fill('Physics 11B');

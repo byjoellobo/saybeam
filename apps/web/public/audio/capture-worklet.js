@@ -31,4 +31,4 @@ class CaptureProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('caption-room-capture', CaptureProcessor);
+registerProcessor('saybeam-capture', CaptureProcessor);

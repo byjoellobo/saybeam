@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { PartialCaption, Segment } from '@caption-room/protocol';
+import type { PartialCaption, Segment } from '@saybeam/protocol';
 import type { ListenerPrefs } from '../lib/storage';
 
 interface CaptionViewProps {

@@ -74,7 +74,7 @@ export interface BenchResult {
   readonly userAgent: string;
 }
 
-const KEY = 'caption-room:bench-results';
+const KEY = 'saybeam:bench-results';
 
 export function loadResults(): BenchResult[] {
   try {

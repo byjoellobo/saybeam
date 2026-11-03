@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { formatRoomCode, type ServerInfo } from '@caption-room/protocol';
+import { formatRoomCode, type ServerInfo } from '@saybeam/protocol';
 import { createRoom, describeRoom, fetchInfo, ApiError } from '../lib/api';
 import { navigate, paths } from '../lib/router';
 import { forgetRoom, listSavedRooms, saveRoom, type SavedRoom } from '../lib/storage';
@@ -83,7 +83,7 @@ export function Home() {
       <header class="hero">
         <div class="brand">
           <img src="/icons/icon.svg" alt="" width={56} height={56} />
-          <h1>Caption Room</h1>
+          <h1>Saybeam</h1>
         </div>
         <p class="lede">
           Live captions that everyone in the room can follow on their own phone. Free, open source, and private by default: speech can be recognised right on the speaker's device.
@@ -215,7 +215,7 @@ export function Home() {
       </section>
 
       <footer class="site-footer">
-        <span>Caption Room {info?.version ? `v${info.version}` : ''}</span>
+        <span>Saybeam {info?.version ? `v${info.version}` : ''}</span>
         <span>
           Free software under the GNU AGPL. <a href={SOURCE_URL}>Source code</a>
         </span>

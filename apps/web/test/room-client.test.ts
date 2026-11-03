@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RoomClient, type KeyValueStore, type SocketLike, type Timers } from '../src/lib/room-client';
-import type { ServerMsg, WelcomeMsg } from '@caption-room/protocol';
+import type { ServerMsg, WelcomeMsg } from '@saybeam/protocol';
 
 class FakeSocket implements SocketLike {
   readyState = 0;
@@ -180,7 +180,7 @@ describe('RoomClient', () => {
     last().recv(welcome());
     c.sendFinal({ id: 'a', text: 'One.' });
     expect(c.snapshot.pending).toHaveLength(1);
-    expect(store.getItem('caption-room:outbox:ABCDEF')).toContain('One.');
+    expect(store.getItem('saybeam:outbox:ABCDEF')).toContain('One.');
 
     last().drop();
     expect(c.snapshot.connection).toBe('reconnecting');
@@ -201,15 +201,15 @@ describe('RoomClient', () => {
     last().recv({ t: 'final', seg: { seq: 1, id: 'a', text: 'One.', ts: 1, rev: 1 } });
     last().recv({ t: 'final', seg: { seq: 2, id: 'b', text: 'Spoken offline.', ts: 2, rev: 2 } });
     expect(c.snapshot.pending).toHaveLength(0);
-    expect(store.getItem('caption-room:outbox:ABCDEF')).toBeNull();
+    expect(store.getItem('saybeam:outbox:ABCDEF')).toBeNull();
     expect(c.snapshot.view.segments).toHaveLength(2);
   });
 
   it('restores the outbox from storage on a fresh page load', () => {
-    store.setItem('caption-room:outbox:ABCDEF', JSON.stringify([{ t: 'final', id: 'z', text: 'Saved.' }, { junk: true }]));
+    store.setItem('saybeam:outbox:ABCDEF', JSON.stringify([{ t: 'final', id: 'z', text: 'Saved.' }, { junk: true }]));
     const c = make();
     expect(c.snapshot.pending.map((p) => p.id)).toEqual(['z']);
-    store.setItem('caption-room:outbox:ABCDEF', '{not json');
+    store.setItem('saybeam:outbox:ABCDEF', '{not json');
     expect(make().snapshot.pending).toEqual([]);
   });
 

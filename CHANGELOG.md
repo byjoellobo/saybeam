@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Caption Room are documented in this file.
+All notable changes to Saybeam are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
@@ -13,13 +13,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Offline model download button**, so a speaker can fetch an on-device speech model ahead of time and caption without internet later.
 - **Continuous integration** on GitHub Actions: lint, type check, unit tests with coverage, the web build, relay tests, protocol conformance against both the Worker and the relay, and end-to-end tests.
 - **Prebuilt LAN relay binaries** for Windows, Linux and macOS, attached to each GitHub release.
-- **Docker image** of the relay for self-hosting on a server, published to `ghcr.io/mezpos/caption-room`. See [docs/self-hosting.md](docs/self-hosting.md).
+- **Docker image** of the relay for self-hosting on a server, published to `ghcr.io/byjoellobo/saybeam`. See [docs/self-hosting.md](docs/self-hosting.md).
 - **Playwright end-to-end tests** for the main speaker, listener and corrector flows.
 - **Biome** for linting and formatting.
 - Contributor guide, code of conduct, security policy, issue forms (including one for sharing `/bench` field-test results), and new docs: [architecture](docs/architecture.md), [deploy](docs/deploy.md) and [choosing an engine](docs/engines.md).
 
 - **Accessibility checks** (axe, WCAG 2.1 AA) on the home page, speaker console, listener view, display settings and corrector view, and a full-pipeline test that feeds a recording through a fake microphone into on-device recognition.
-- The join box accepts a pasted private-room link. The app shows a "Source code" link, as the AGPL requires for network use (`CAPTION_ROOM_SOURCE_URL`).
+- The join box accepts a pasted private-room link. The app shows a "Source code" link, as the AGPL requires for network use (`SAYBEAM_SOURCE_URL`).
 - `THIRD_PARTY_NOTICES.md` (generated from what the build actually bundles) and `relay/THIRD_PARTY_LICENSES.md`.
 
 ### Changed
@@ -76,5 +76,5 @@ The first release: shareable live captions that everyone in a room can follow on
 - Speech models pinned to exact Hugging Face commits.
 - A network-first service worker for pages: new deploys are picked up immediately, and a missing or evicted cache can never block loading.
 
-[Unreleased]: https://github.com/mezpos/caption-room/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/mezpos/caption-room/releases/tag/v0.1.0
+[Unreleased]: https://github.com/byjoellobo/saybeam/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/byjoellobo/saybeam/releases/tag/v0.1.0

@@ -13,7 +13,7 @@ test('@model speech from the microphone reaches a listener as captions', async (
 
   await page.addInitScript(() => {
     localStorage.setItem(
-      'caption-room:speaker-prefs',
+      'saybeam:speaker-prefs',
       JSON.stringify({ engine: { kind: 'local', modelId: 'moonshine-tiny', device: 'wasm', language: null, partials: true }, replacements: '', vocabulary: '' }),
     );
   });

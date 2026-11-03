@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
-import type { Role } from '@caption-room/protocol';
+import type { Role } from '@saybeam/protocol';
 import { RoomClient, type ClientSnapshot } from './room-client';
 import { useReconnectNudges } from './browser';
 

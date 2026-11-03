@@ -1,5 +1,5 @@
 {
-  "name": "caption-room",
+  "name": "saybeam",
   "private": true,
   "version": "0.1.0",
   "description": "Free, open live captions you can share with a room code. A successor to Web Captioner's sharing feature.",
@@ -10,11 +10,11 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @caption-room/web",
-    "dev:worker": "npm run build -w @caption-room/web && npm run dev -w @caption-room/worker",
-    "build": "npm run build -w @caption-room/web",
-    "build:relay": "npm run build -w @caption-room/web && cargo build --release --manifest-path relay/Cargo.toml",
-    "deploy": "npm run build -w @caption-room/web && npm run deploy -w @caption-room/worker",
+    "dev": "npm run dev -w @saybeam/web",
+    "dev:worker": "npm run build -w @saybeam/web && npm run dev -w @saybeam/worker",
+    "build": "npm run build -w @saybeam/web",
+    "build:relay": "npm run build -w @saybeam/web && cargo build --release --manifest-path relay/Cargo.toml",
+    "deploy": "npm run build -w @saybeam/web && npm run deploy -w @saybeam/worker",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:relay": "cargo test --manifest-path relay/Cargo.toml",
@@ -42,10 +42,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mezpos/caption-room.git"
+    "url": "git+https://github.com/byjoellobo/saybeam.git"
   },
-  "homepage": "https://github.com/mezpos/caption-room",
+  "homepage": "https://github.com/byjoellobo/saybeam",
   "bugs": {
-    "url": "https://github.com/mezpos/caption-room/issues"
+    "url": "https://github.com/byjoellobo/saybeam/issues"
   }
 }

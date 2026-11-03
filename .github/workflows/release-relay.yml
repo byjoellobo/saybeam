@@ -21,7 +21,7 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   # Footer "Source code" link in the web app (AGPL-3.0 section 13).
-  CAPTION_ROOM_SOURCE_URL: https://github.com/${{ github.repository }}
+  SAYBEAM_SOURCE_URL: https://github.com/${{ github.repository }}
 
 jobs:
   web:
@@ -103,8 +103,8 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME}"
           if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then version="dev-${GITHUB_SHA::7}"; fi
-          name="caption-room-relay-${version}-${TARGET}"
-          exe="caption-room-relay"
+          name="saybeam-relay-${version}-${TARGET}"
+          exe="saybeam-relay"
           if [[ "${TARGET}" == *windows* ]]; then exe="${exe}.exe"; fi
           mkdir -p "staging/${name}" out
           cp "relay/target/${TARGET}/release/${exe}" "staging/${name}/"
@@ -194,6 +194,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CAPTION_ROOM_SOURCE_URL=${{ env.CAPTION_ROOM_SOURCE_URL }}
+            SAYBEAM_SOURCE_URL=${{ env.SAYBEAM_SOURCE_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

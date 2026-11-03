@@ -5,15 +5,15 @@ export function About() {
   return (
     <main class="narrow prose" id="main">
       <p>
-        <AppLink href="/">Back to Caption Room</AppLink>
+        <AppLink href="/">Back to Saybeam</AppLink>
       </p>
-      <h1>About Caption Room</h1>
+      <h1>About Saybeam</h1>
       <p>
-        Caption Room brings back something people relied on and lost. Web Captioner, a free tool built on Chrome's speech API, ran from 2017 until 31 October 2023. Its share link
-        let anyone follow the captions on their own device. When it shut down, its code was released under the MIT licence, but nothing took the place of shareable captions. What
+        Saybeam brings back something people relied on and lost. Web Captioner, a free tool built on Chrome's speech API, ran from 2017 until 31 October 2023. Its share link let
+        anyone follow the captions on their own device. When it shut down, its code was released under the MIT licence, but nothing took the place of shareable captions. What
         exists now is either billed per live minute or is a developer library rather than something a teacher can just use.
       </p>
-      <p>Caption Room is free, open source and built to be run by anyone: a school, a place of worship, a conference, or one person with a laptop.</p>
+      <p>Saybeam is free, open source and built to be run by anyone: a school, a place of worship, a conference, or one person with a laptop.</p>
 
       <h2>Privacy</h2>
       <ul>
@@ -37,7 +37,7 @@ export function About() {
 
       <h2 id="lan">LAN mode for weak internet</h2>
       <p>
-        In a school with poor connectivity, run the small Caption Room relay on the teacher's laptop. The laptop serves the app and relays captions over the school Wi-Fi or its own
+        In a school with poor connectivity, run the small Saybeam relay on the teacher's laptop. The laptop serves the app and relays captions over the school Wi-Fi or its own
         hotspot, so phones need no internet at all. Open <code>http://localhost:7300</code> on the laptop to caption (browsers only allow the microphone on localhost or HTTPS), and
         students scan the QR code it shows. With the optional models folder, the on-device speech models load from the laptop too.
       </p>
@@ -71,8 +71,8 @@ export function About() {
 
       <h2>Free software</h2>
       <p>
-        Caption Room is free software under the GNU Affero General Public License, version 3 or later. You may use, study, share and change it. If you run a modified version for
-        other people, you must offer them its source code. <a href={SOURCE_URL}>Get the source code</a>.
+        Saybeam is free software under the GNU Affero General Public License, version 3 or later. You may use, study, share and change it. If you run a modified version for other
+        people, you must offer them its source code. <a href={SOURCE_URL}>Get the source code</a>.
       </p>
       <p>
         Built with transformers.js and ONNX Runtime (Apache 2.0), Silero VAD (MIT), Preact (MIT), Cloudflare Durable Objects, and the Atkinson Hyperlegible typeface from the

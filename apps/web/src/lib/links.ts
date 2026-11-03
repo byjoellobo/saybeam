@@ -1,4 +1,4 @@
-import { normalizeRoomCode } from '@caption-room/protocol';
+import { normalizeRoomCode } from '@saybeam/protocol';
 import { paths } from './router';
 
 /** The audience link: a private room's QR carries the listener secret in the fragment (never sent to servers). */

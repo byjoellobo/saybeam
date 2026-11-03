@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { normalizeRoomCode } from '@caption-room/protocol';
+import { normalizeRoomCode } from '@saybeam/protocol';
 
 export type Route =
   | { readonly name: 'home' }
@@ -39,7 +39,7 @@ export function parseRoute(pathname: string): Route {
   return { name: 'not-found' };
 }
 
-const ROUTE_EVENT = 'caption-room:navigate';
+const ROUTE_EVENT = 'saybeam:navigate';
 
 export function navigate(path: string, replace = false): void {
   if (replace) history.replaceState(null, '', path);

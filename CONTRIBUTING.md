@@ -1,6 +1,6 @@
-# Contributing to Caption Room
+# Contributing to Saybeam
 
-Thank you for helping. Caption Room exists so that deaf and hard of hearing people can follow what is said in a room, on their own phone, for free. Every fix, test and translation moves that forward.
+Thank you for helping. Saybeam exists so that deaf and hard of hearing people can follow what is said in a room, on their own phone, for free. Every fix, test and translation moves that forward.
 
 This guide covers how to help, how to set up the project, and the few rules that keep it healthy. Please also read the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -50,7 +50,7 @@ The relay embeds the built web app at compile time, so build the app first:
 ```bash
 npm run build                                          # builds apps/web/dist
 cargo build --release --manifest-path relay/Cargo.toml
-./relay/target/release/caption-room-relay              # serves http://localhost:7300
+./relay/target/release/saybeam-relay              # serves http://localhost:7300
 ```
 
 `npm run build:relay` does both steps. While working on the web app, `--web-dir apps/web/dist` serves files from disk instead of the embedded copy. [relay/README.md](relay/README.md) lists every flag.
@@ -94,7 +94,7 @@ When you change room behaviour (a message, a limit, an error, a close code):
 
 ```bash
 npm run dev:worker                                             # terminal 1
-./relay/target/release/caption-room-relay --bind 127.0.0.1     # terminal 2 (rebuild it first)
+./relay/target/release/saybeam-relay --bind 127.0.0.1     # terminal 2 (rebuild it first)
 npm run conformance -- http://127.0.0.1:8787                   # terminal 3
 npm run conformance -- http://127.0.0.1:7300
 ```
@@ -146,7 +146,7 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`. Example
 
 ## Sign your commits (DCO)
 
-Caption Room uses the [Developer Certificate of Origin](https://developercertificate.org/) (DCO) instead of a contributor licence agreement. By adding a `Signed-off-by` line to a commit, you certify that:
+Saybeam uses the [Developer Certificate of Origin](https://developercertificate.org/) (DCO) instead of a contributor licence agreement. By adding a `Signed-off-by` line to a commit, you certify that:
 
 - you wrote the change, or otherwise have the right to submit it under the project's open source licence;
 - if it is based on earlier work, that work is under a compatible open source licence and you may submit it with your changes;
@@ -165,6 +165,6 @@ Forgot? Fix the last commit with `git commit --amend -s --no-edit`, or every com
 
 ## License
 
-Caption Room is licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). By contributing, you agree that your contribution is licensed under the same terms. There is no separate agreement to sign: the DCO sign-off is all we need.
+Saybeam is licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). By contributing, you agree that your contribution is licensed under the same terms. There is no separate agreement to sign: the DCO sign-off is all we need.
 
 Only add dependencies whose licences are compatible with the AGPL (for example MIT, BSD, Apache-2.0 or ISC), and mention any new dependency in your pull request.

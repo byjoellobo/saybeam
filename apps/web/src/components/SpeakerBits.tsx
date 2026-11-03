@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { formatRoomCode } from '@caption-room/protocol';
+import { formatRoomCode } from '@saybeam/protocol';
 import { qrSvg } from '../lib/browser';
 import type { EngineStats, EngineStatus } from '../engines/types';
 

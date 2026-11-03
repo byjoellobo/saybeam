@@ -95,7 +95,7 @@ async function main() {
     await copyFile(join(ortDist, f), join(out, 'ort', f));
     console.log(`  copied ort/${f}`);
   }
-  console.log(`\nDone. Start the relay with:  caption-room-relay --models-dir ${out}`);
+  console.log(`\nDone. Start the relay with:  saybeam-relay --models-dir ${out}`);
 }
 
 main().catch((err) => {

@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the idea. The most useful requests start from a real situation: who needs it, where, and what gets in their way today. Please search the [open issues](https://github.com/mezpos/caption-room/issues) first.
+        Thanks for the idea. The most useful requests start from a real situation: who needs it, where, and what gets in their way today. Please search the [open issues](https://github.com/byjoellobo/saybeam/issues) first.
 
   - type: textarea
     id: problem

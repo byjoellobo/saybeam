@@ -1,5 +1,5 @@
 /**
- * Caption Room wire protocol, version 1.
+ * Saybeam wire protocol, version 1.
  *
  * Every frame is a single JSON object with a `t` (type) field. The same
  * protocol is spoken by the Cloudflare Durable Object and by the Rust LAN
@@ -219,7 +219,7 @@ export type ServerMsg =
   | PongMsg
   | RotatedMsg;
 
-/** WebSocket close codes used by Caption Room (4000-4999 is the application range). */
+/** WebSocket close codes used by Saybeam (4000-4999 is the application range). */
 export const CLOSE = {
   replaced: 4001,
   unauthorized: 4003,

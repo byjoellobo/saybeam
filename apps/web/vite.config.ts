@@ -21,7 +21,7 @@ const bundledPackageDirs = new Set<string>();
 
 function collectBundledPackages(write: boolean): Plugin {
   return {
-    name: 'caption-room:collect-bundled-packages',
+    name: 'saybeam:collect-bundled-packages',
     apply: 'build',
     generateBundle(_opts, bundle) {
       for (const chunk of Object.values(bundle)) {
@@ -54,7 +54,7 @@ function collectBundledPackages(write: boolean): Plugin {
  */
 function pinCspToOrt(): Plugin {
   return {
-    name: 'caption-room:pin-csp',
+    name: 'saybeam:pin-csp',
     apply: 'build',
     closeBundle() {
       const file = join(here, 'dist', '_headers');
@@ -72,7 +72,7 @@ function pinCspToOrt(): Plugin {
  */
 function dropOrtWasm(): Plugin {
   return {
-    name: 'caption-room:drop-ort-wasm',
+    name: 'saybeam:drop-ort-wasm',
     apply: 'build',
     generateBundle(_opts, bundle) {
       for (const name of Object.keys(bundle)) {
@@ -90,7 +90,7 @@ const isolation = {
   'Cross-Origin-Embedder-Policy': 'require-corp',
 };
 
-const backend = process.env.CAPTION_ROOM_BACKEND ?? 'http://127.0.0.1:8787';
+const backend = process.env.SAYBEAM_BACKEND ?? 'http://127.0.0.1:8787';
 
 export default defineConfig({
   plugins: [
@@ -103,7 +103,7 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icons/icon.svg', 'icons/*.png', 'audio/capture-worklet.js'],
       manifest: {
-        name: 'Caption Room',
+        name: 'Saybeam',
         short_name: 'Captions',
         description: 'Free live captions anyone in the room can follow on their own phone.',
         start_url: '/',
@@ -139,7 +139,7 @@ export default defineConfig({
   ],
   define: {
     // AGPL section 13: the app links to the source of the code it is running.
-    __SOURCE_URL__: JSON.stringify(process.env.CAPTION_ROOM_SOURCE_URL ?? 'https://github.com/mezpos/caption-room'),
+    __SOURCE_URL__: JSON.stringify(process.env.SAYBEAM_SOURCE_URL ?? 'https://github.com/byjoellobo/saybeam'),
   },
   worker: { format: 'es', plugins: () => [dropOrtWasm(), collectBundledPackages(false)] },
   build: { target: 'es2022', sourcemap: true },

@@ -2,8 +2,8 @@
  * RoomStore on Durable Object SQLite. Calls are synchronous, so a handler's
  * writes (insert segment + bump room rev) commit together.
  */
-import type { RoomRecord, RoomStore } from '@caption-room/protocol/room';
-import type { Segment } from '@caption-room/protocol';
+import type { RoomRecord, RoomStore } from '@saybeam/protocol/room';
+import type { Segment } from '@saybeam/protocol';
 
 type SegmentRow = {
   seq: number;

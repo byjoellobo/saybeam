@@ -3,7 +3,7 @@
  *
  * The server sends a sliding window: the last N completed segments plus at
  * most one trailing in-progress segment (`completed: false`). We turn that into
- * Caption Room partials and finals, never emitting the same final twice.
+ * Saybeam partials and finals, never emitting the same final twice.
  */
 export interface WhisperLiveConfigInput {
   readonly uid: string;

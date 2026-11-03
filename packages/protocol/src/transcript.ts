@@ -155,7 +155,7 @@ export function toPlainText(segments: readonly Segment[], opts: PlainTextOptions
 export function toJson(meta: RoomMeta | null, segments: readonly Segment[], room?: string): string {
   return JSON.stringify(
     {
-      format: 'caption-room-transcript',
+      format: 'saybeam-transcript',
       version: 1,
       room: room ?? null,
       title: meta?.title ?? '',
